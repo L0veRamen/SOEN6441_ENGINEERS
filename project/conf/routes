@@ -10,3 +10,6 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 
 GET     /hello                      controllers.HomeController.hello(name: String)
 GET     /hello/:name                controllers.HomeController.hello(name: String)
+
+# A) Source website profiles
+GET     /profile/:name              controllers.Profile.index(name)
