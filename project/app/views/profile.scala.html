@@ -1,0 +1,19 @@
+@import models.NewsResponse
+
+@(news: NewsResponse)
+
+@main("Profile") {
+    <h1>Status: @news.status</h1>
+    <h2>Total Results: @news.totalResults</h2>
+
+    <ul>
+    @for(article <- news.articles.take(10)) {
+        <li>
+            <h3>@article.title</h3>
+            <p><em>@article.author</em></p>
+            <p>@article.description</p>
+            <a href="@article.url" target="_blank">Read more</a>
+        </li>
+    }
+    </ul>
+}
