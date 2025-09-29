@@ -4,7 +4,7 @@
 
 **Team Setup:**
 
-**YuHao Ma**: Individual part a) Source Website Profile
+**YuHao Ma**: Individual part a) Source Website SourceProfile
 
 **Zilun Li**: Individual part b) Word Stats
 

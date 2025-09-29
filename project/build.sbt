@@ -1,4 +1,4 @@
-name := """temp"""
+name := """project"""
 organization := "SOEN6441"
 
 version := "1.0-SNAPSHOT"

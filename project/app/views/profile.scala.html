@@ -1,19 +1,33 @@
-@import models.NewsResponse
+@import models.SourceProfile
+@import models.NewsResponse.Article
 
-@(news: NewsResponse)
+@(profile: SourceProfile, articles: List[Article])
 
-@main("Profile") {
-    <h1>Status: @news.status</h1>
-    <h2>Total Results: @news.totalResults</h2>
+@main("Profile: " + profile.name) {
 
-    <ul>
-    @for(article <- news.articles.take(10)) {
-        <li>
-            <h3>@article.title</h3>
-            <p><em>@article.author</em></p>
-            <p>@article.description</p>
-            <a href="@article.url" target="_blank">Read more</a>
-        </li>
+    <!-- Profile section -->
+    <div class="profile-card">
+        <h2>@profile.name</h2>
+        <p><strong>Category:</strong> @profile.category</p>
+        <p><strong>Language:</strong> @profile.language</p>
+        <p><strong>Country:</strong> @profile.country</p>
+        <p><a href="@profile.url" target="_blank">@profile.url</a></p>
+        <p>@profile.description</p>
+    </div>
+
+    <div class="results">
+    @for((article, i) <- articles.zipWithIndex) {
+        <div class="result-item">
+            <p>
+                @{i+1}.
+                <strong>Title:</strong> <a href="@article.url" target="_blank">@article.title</a>
+                <strong>Source:</strong>
+                <a href="@routes.Profile.index(article.source.name)">
+                    @article.source.name
+                </a>
+                <strong>Published:</strong> @article.publishedAt
+            </p>
+        </div>
     }
-    </ul>
+    </div>
 }

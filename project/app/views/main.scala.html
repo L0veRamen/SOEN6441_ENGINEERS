@@ -17,7 +17,9 @@
     <body>
         @* And here's where we render the `Html` object containing
          * the page content. *@
-        @content
+        <div class="container">
+            @content
+        </div>
 
         <script src="@routes.Assets.versioned("javascripts/main.js")" type="text/javascript"></script>
     </body>
