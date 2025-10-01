@@ -1,0 +1,22 @@
+@import models.NewsResponse.Article
+
+@(articles: List[Article])
+
+<!-- Result list -->
+<div class="results">
+    @for((article, i) <- articles.zipWithIndex) {
+        <div class="result-item">
+            <p>
+                @{i + 1}.
+            <strong>Title:</strong>
+            <a href="@article.url" target="_blank">@article.title</a>
+            <strong>Source:</strong>
+            <a href="@routes.Profile.index(article.source.name)">
+            @article.source.name
+            </a>
+            <strong>Published:</strong>
+                @article.publishedAt
+            </p>
+        </div>
+    }
+</div>

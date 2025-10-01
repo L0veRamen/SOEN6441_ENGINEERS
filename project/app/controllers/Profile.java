@@ -4,7 +4,6 @@ import play.*;
 import play.mvc.*;
 import play.libs.Json;
 
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -31,11 +30,11 @@ public class Profile extends Controller {
             sources = handleSourceRequest();
         }
         if (sources.isEmpty()) {
-            // TODO: api failed page
+            return ok(views.html.error.render("Api failed to load sources"));
         }
         var source = sources.stream().filter( profile -> profile.name.equalsIgnoreCase(name) ).findAny();
         if (source.isEmpty()) {
-            // TODO: Not found page
+            return ok(views.html.error.render(name + " is not found in all sources"));
         }
         NewsResponse response;
         if (cache == null) {
@@ -46,7 +45,7 @@ public class Profile extends Controller {
         } else {
             response = handleArticleRequest(name);
             if (response == null) {
-                // TODO: api failed page
+                return ok(views.html.error.render("Api failed to load articles from source " + name));
             }
             cache.put(name, response);
         }
