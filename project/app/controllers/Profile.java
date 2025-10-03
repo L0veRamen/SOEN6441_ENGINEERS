@@ -10,8 +10,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import java.util.concurrent.*;
 
 import models.*;
 
@@ -25,35 +26,37 @@ public class Profile extends Controller {
     private List<SourceProfile> sources;
     private HashMap<String, NewsResponse> cache;
 
-    public Result index(String name) {
-        if (sources == null || sources.isEmpty()) {
-            sources = handleSourceRequest();
-        }
-        if (sources.isEmpty()) {
-            return ok(views.html.error.render("Api failed to load sources"));
-        }
-        var source = sources.stream().filter( profile -> profile.name.equalsIgnoreCase(name) ).findAny();
-        if (source.isEmpty()) {
-            return ok(views.html.error.render(name + " is not found in all sources"));
-        }
-        NewsResponse response;
+    public CompletionStage<Result> index(String name) {
         if (cache == null) {
             cache = new HashMap<>();
         }
-        if (cache.containsKey(name)) {
-            response = cache.get(name);
-        } else {
-            response = handleArticleRequest(name);
-            if (response == null) {
-                return ok(views.html.error.render("Api failed to load articles from source " + name));
-            }
-            cache.put(name, response);
-        }
+        CompletableFuture<List<SourceProfile>> response = (sources == null || sources.isEmpty())
+                ? handleSourceRequest()
+                : CompletableFuture.completedFuture(sources);
 
-        return ok(views.html.profile.render(source.get(), response.articles));
+        CompletableFuture<NewsResponse> newsResponse = (cache.containsKey(name))
+                ? CompletableFuture.completedFuture(cache.get(name))
+                : handleArticleRequest(name);
+
+        return response.thenCombine(newsResponse, (srcs, news) -> {
+            sources = srcs;
+            if (sources.isEmpty()) {
+                return internalServerError(views.html.error.render("Api failed to load sources"));
+            }
+            var source = sources.stream()
+                    .filter( profile -> profile.name.equalsIgnoreCase(name) )
+                    .limit(1)
+                    .collect(Collectors.toList());
+            if (source.isEmpty()) {
+                return internalServerError(views.html.error.render(name + " is not found in all sources"));
+            }
+            cache.put(name, news);
+            return ok(views.html.profile.render(source.get(0), news.articles));
+
+        }).exceptionally(e -> internalServerError(views.html.error.render(e.getMessage())));
     }
 
-    NewsResponse handleArticleRequest(String name) {
+    CompletableFuture<NewsResponse> handleArticleRequest(String name) {
         try {
             HttpClient client = HttpClient.newHttpClient();
 
@@ -62,14 +65,18 @@ public class Profile extends Controller {
                     .GET()
                     .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            return Json.fromJson(Json.parse(response.body()), NewsResponse.class);
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body)
+                    .thenApply(body -> Json.fromJson(Json.parse(body), NewsResponse.class))
+                    .exceptionally(e -> null);
         } catch (Exception e) {
-            return null;
+            CompletableFuture<NewsResponse> failed = new CompletableFuture<>();
+            failed.completeExceptionally(e);
+            return failed;
         }
     }
 
-    List<SourceProfile> handleSourceRequest() {
+    CompletableFuture<List<SourceProfile>> handleSourceRequest() {
         try {
             HttpClient client = HttpClient.newHttpClient();
 
@@ -78,14 +85,20 @@ public class Profile extends Controller {
                     .GET()
                     .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body)
+                    .thenApply(body -> {
+                        var sourcesNode = Json.parse(body).get("sources");
+                        return StreamSupport.stream(sourcesNode.spliterator(), false)
+                                .map(node -> Json.fromJson(node, SourceProfile.class))
+                                .toList();
+                    })
+                    .exceptionally(ex -> List.of());
 
-            var sourcesNode = Json.parse(response.body()).get("sources");
-            return StreamSupport.stream(sourcesNode.spliterator(), false)
-                        .map(node -> Json.fromJson(node, SourceProfile.class))
-                        .toList();
         } catch (Exception e) {
-            return new ArrayList<>();
+            CompletableFuture<List<SourceProfile>> failed = new CompletableFuture<>();
+            failed.completeExceptionally(e);
+            return failed;
         }
     }
 
