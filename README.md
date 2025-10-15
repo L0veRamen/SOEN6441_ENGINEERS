@@ -10,7 +10,7 @@
 
 **Yang Zhang**: Individual part c) New Sources
 
-**Ruochen Qiao**: Individual part d) Article Sentiment
+**Ruochen Qiao**: Individual part d) models.Article Sentiment
 
 **Chen Qian**: Individual part e) Description readability
 

@@ -1,7 +1,7 @@
 @import models.SourceProfile
-@import models.NewsResponse.Article
+@import models.NewsResponse.models.Article
 
-@(profile: SourceProfile, articles: List[Article])
+@(profile: SourceProfile, articles: List[models.Article])
 
 @main("Profile: " + profile.name) {
 
