@@ -1,0 +1,39 @@
+# Routes NotiLytics
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# ==================== GROUP ROUTES ====================
+
+# ===== Home (canonical) =====
+GET   /               controllers.HomeController.index(request: play.mvc.Http.Request)
+GET   /Notilytics     controllers.HomeController.index(request: play.mvc.Http.Request)
+
+# ===== Search (reads q & sortBy from query string) =====
+GET   /notilytics        controllers.SearchController.search(request: play.mvc.Http.Request)
+
+
+# ==================== INDIVIDUAL TASK ROUTES (PLACEHOLDERS) ====================
+
+# Individual A: Source Profile
+# TODO: Implement SourceProfileController
+# GET     /source/:id                  controllers.SourceProfileController.view(request: play.mvc.Http.Request, id: String)
+
+# Individual B: Word Statistics
+# TODO: Implement WordStatsController
+# GET     /wordstats                   controllers.WordStatsController.view(request: play.mvc.Http.Request, q: String)
+
+# Individual C: News Sources
+# TODO: Implement NewsSourcesController
+# GET     /sources                     controllers.NewsSourcesController.list(request: play.mvc.Http.Request, country: String ?= "", category: String ?= "", language: String ?= "")
+
+# Individual D: Sentiment Analysis
+# Integrated into SearchBlock - no separate route needed
+# Service: SentimentService (computes sentiment during search)
+
+# Individual E: Readability Scores
+# Integrated into SearchBlock - no separate route needed
+# Service: ReadabilityService (computes FK scores during search)
+
+
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
