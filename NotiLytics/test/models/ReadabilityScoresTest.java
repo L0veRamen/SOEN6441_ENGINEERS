@@ -1,8 +1,8 @@
 package models;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 /**
  * Test class for ReadabilityScores record
@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Chen Qian
  */
 public class ReadabilityScoresTest {
+    private static final double DELTA = 1e-6;
 
     /**
      * Test basic constructor and accessors
@@ -46,16 +47,16 @@ public class ReadabilityScoresTest {
     public void testClamping() {
         // Negative values should be clamped to 0
         ReadabilityScores negative = new ReadabilityScores(-5.0, -10.0);
-        assertEquals(0.0, negative.gradeLevel());
-        assertEquals(0.0, negative.readingEase());
+        assertEquals(0.0, negative.gradeLevel(), DELTA);
+        assertEquals(0.0, negative.readingEase(), DELTA);
 
         // Reading ease above 100 should be clamped
         ReadabilityScores high = new ReadabilityScores(0.5, 150.0);
-        assertEquals(100.0, high.readingEase());
+        assertEquals(100.0, high.readingEase(), DELTA);
 
         // Grade level has no upper bound
         ReadabilityScores highGrade = new ReadabilityScores(20.0, 50.0);
-        assertEquals(20.0, highGrade.gradeLevel());
+        assertEquals(20.0, highGrade.gradeLevel(), DELTA);
     }
 
     /**

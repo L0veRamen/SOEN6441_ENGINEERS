@@ -1,9 +1,9 @@
 package modules;
 
 import models.ReadabilityScores;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 /**
  * Comprehensive test class for ReadabilityScores record
@@ -50,8 +50,8 @@ public class ReadabilityScoresTest {
     @Test
     public void testNegativeGradeLevelClampedToZero() {
         ReadabilityScores scores = new ReadabilityScores(-5.0, 50.0);
-        assertEquals(0.0, scores.gradeLevel());
-        assertEquals(50.0, scores.readingEase());
+        assertEquals(0.0, scores.gradeLevel(), 1e-6);
+        assertEquals(50.0, scores.readingEase(), 1e-6);
     }
 
     /**
@@ -63,8 +63,8 @@ public class ReadabilityScoresTest {
     @Test
     public void testNegativeReadingEaseClampedToZero() {
         ReadabilityScores scores = new ReadabilityScores(5.0, -10.0);
-        assertEquals(5.0, scores.gradeLevel());
-        assertEquals(0.0, scores.readingEase());
+        assertEquals(5.0, scores.gradeLevel(), 1e-6);
+        assertEquals(0.0, scores.readingEase(), 1e-6);
     }
 
     /**
@@ -76,8 +76,8 @@ public class ReadabilityScoresTest {
     @Test
     public void testBothNegativeValuesClamped() {
         ReadabilityScores scores = new ReadabilityScores(-5.0, -10.0);
-        assertEquals(0.0, scores.gradeLevel());
-        assertEquals(0.0, scores.readingEase());
+        assertEquals(0.0, scores.gradeLevel(), 1e-6);
+        assertEquals(0.0, scores.readingEase(), 1e-6);
     }
 
     /**
@@ -89,8 +89,8 @@ public class ReadabilityScoresTest {
     @Test
     public void testReadingEaseClampedTo100() {
         ReadabilityScores scores = new ReadabilityScores(0.5, 150.0);
-        assertEquals(0.5, scores.gradeLevel());
-        assertEquals(100.0, scores.readingEase());
+        assertEquals(0.5, scores.gradeLevel(), 1e-6);
+        assertEquals(100.0, scores.readingEase(), 1e-6);
     }
 
     /**
@@ -102,7 +102,7 @@ public class ReadabilityScoresTest {
     @Test
     public void testReadingEaseExactly100() {
         ReadabilityScores scores = new ReadabilityScores(0.0, 100.0);
-        assertEquals(100.0, scores.readingEase());
+        assertEquals(100.0, scores.readingEase(), 1e-6);
     }
 
     /**
@@ -114,7 +114,7 @@ public class ReadabilityScoresTest {
     @Test
     public void testHighGradeLevel() {
         ReadabilityScores scores = new ReadabilityScores(20.0, 50.0);
-        assertEquals(20.0, scores.gradeLevel());
+        assertEquals(20.0, scores.gradeLevel(), 1e-6);
     }
 
     /**
@@ -354,8 +354,8 @@ public class ReadabilityScoresTest {
     @Test
     public void testZeroValues() {
         ReadabilityScores scores = new ReadabilityScores(0.0, 0.0);
-        assertEquals(0.0, scores.gradeLevel());
-        assertEquals(0.0, scores.readingEase());
+        assertEquals(0.0, scores.gradeLevel(), 1e-6);
+        assertEquals(0.0, scores.readingEase(), 1e-6);
         assertFalse(scores.isValid());
     }
 
@@ -368,7 +368,7 @@ public class ReadabilityScoresTest {
     @Test
     public void testMaximumReadingEase() {
         ReadabilityScores scores = new ReadabilityScores(1.0, 100.0);
-        assertEquals(100.0, scores.readingEase());
+        assertEquals(100.0, scores.readingEase(), 1e-6);
         assertEquals("Very Easy", scores.getReadingEaseInterpretation());
     }
 }

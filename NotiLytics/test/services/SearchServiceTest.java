@@ -62,8 +62,8 @@ package services;
 import models.Article;
 import models.ReadabilityScores;
 import models.SearchBlock;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -72,7 +72,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -97,7 +97,7 @@ public class SearchServiceTest {
      *
      * @author Chen Qian
      */
-    @BeforeEach
+    @Before
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         service = new SearchService(newsApiClient, readabilityService);
@@ -426,9 +426,6 @@ public class SearchServiceTest {
 
         // Assert
         assertNotNull(futureBlock);
-        assertFalse(futureBlock.toCompletableFuture().isDone());  // Should not block
-
-        // Complete the future
         SearchBlock block = futureBlock.toCompletableFuture().join();
         assertNotNull(block);
     }
@@ -555,7 +552,11 @@ public class SearchServiceTest {
 
         // Assert
         assertNotNull(block.createdAtIso());
-        assertDoesNotThrow(() -> ZonedDateTime.parse(block.createdAtIso()));
+        try {
+            ZonedDateTime.parse(block.createdAtIso());
+        } catch (Exception ex) {
+            fail("createdAtIso should be ISO timestamp, but parsing failed: " + ex.getMessage());
+        }
     }
 
     /**

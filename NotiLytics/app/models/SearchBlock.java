@@ -25,4 +25,9 @@ public record SearchBlock(
         ReadabilityScores readability,  // ADDED for Task E
         List<ReadabilityScores> articleReadability  // Individual scores
 
-) {}
+) {
+    public SearchBlock {
+        articles = articles == null ? List.of() : List.copyOf(articles);
+        articleReadability = articleReadability == null ? List.of() : List.copyOf(articleReadability);
+    }
+}
