@@ -1,32 +1,82 @@
 package controllers;
 
+import models.Article;
+import models.SearchBlock;
+import org.junit.Before;
 import org.junit.Test;
-import play.Application;
-import play.inject.guice.GuiceApplicationBuilder;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import play.mvc.Http;
 import play.mvc.Result;
-import play.test.WithApplication;
+import services.SearchHistoryService;
 
-import static org.junit.Assert.assertEquals;
+import java.util.List;
+
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 import static play.mvc.Http.Status.OK;
-import static play.test.Helpers.GET;
-import static play.test.Helpers.route;
 
-public class HomeControllerTest extends WithApplication {
+@RunWith(MockitoJUnitRunner.class)
+public class HomeControllerTest {
 
-    @Override
-    protected Application provideApplication() {
-        return new GuiceApplicationBuilder().build();
+    @Mock
+    private SearchHistoryService historyService;
+
+    private HomeController controller;
+    private SearchBlock sampleBlock;
+
+    @Before
+    public void setUp() {
+        controller = new HomeController(historyService);
+        sampleBlock = new SearchBlock(
+                "java",
+                "publishedAt",
+                2,
+                List.of(new Article(
+                        "Test Title",
+                        "https://example.com",
+                        "desc",
+                        "source-id",
+                        "Source",
+                        "2024-01-01T00:00:00Z")),
+                "2024-01-01T00:00:00Z");
     }
 
     @Test
-    public void testIndex() {
-        Http.RequestBuilder request = new Http.RequestBuilder()
-                .method(GET)
-                .uri("/");
+    public void indexWithExistingSessionRendersHistory() {
+        when(historyService.list("session-123")).thenReturn(List.of(sampleBlock));
 
-        Result result = route(app, request);
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/")
+                .session("sessionId", "session-123")
+                .build();
+
+        Result result = controller.index(request).toCompletableFuture().join();
+
         assertEquals(OK, result.status());
+        verify(historyService).list("session-123");
     }
 
+    @Test
+    public void indexWithoutSessionGeneratesNewSessionId() {
+        when(historyService.list(anyString())).thenReturn(List.of());
+
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/")
+                .build();
+
+        Result result = controller.index(request).toCompletableFuture().join();
+
+        assertEquals(OK, result.status());
+        ArgumentCaptor<String> sessionCaptor = ArgumentCaptor.forClass(String.class);
+        verify(historyService).list(sessionCaptor.capture());
+        String generatedId = sessionCaptor.getValue();
+        assertNotNull(generatedId);
+        assertFalse(generatedId.isBlank());
+    }
 }

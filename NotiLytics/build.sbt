@@ -61,6 +61,8 @@ jacocoExcludes := Seq(
   // Reverse routers
   "controllers.Reverse*",
   "controllers.javascript.*",
+  "controllers.routes*",
+  "controllers.routes$javascript*",
   // Routers
   "router.*",
   "*.routes.*",

@@ -8,6 +8,9 @@ target
 /.project
 /.settings
 /RUNNING_PID
+.bloop/*
+/.metals
+.metals/*
 
 # Compiled class file
 *.class
