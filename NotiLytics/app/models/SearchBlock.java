@@ -11,7 +11,9 @@ import java.util.List;
  * @param totalResults  Total results available from API
  * @param articles      List of 10 articles
  * @param createdAtIso  When this search was performed
- *
+ * @param readability      Averagescores for all articles (Task E)
+ * @param articleReadability  Individual readability score per article
+ * 
  * @author Chen Qian
  */
 public record SearchBlock(
@@ -19,5 +21,8 @@ public record SearchBlock(
         String sortBy,
         int totalResults,
         List<Article> articles,
-        String createdAtIso
+        String createdAtIso,
+        ReadabilityScores readability,  // ADDED for Task E
+        List<ReadabilityScores> articleReadability  // Individual scores
+
 ) {}

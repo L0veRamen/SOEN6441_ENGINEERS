@@ -3,6 +3,7 @@ package services;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import models.Article;
+import models.ReadabilityScores;
 import models.SearchBlock;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,8 +37,9 @@ public class SearchHistoryServiceTest {
                         "source-id",
                         "Source",
                         "2024-01-01T00:00:00Z")),
-                "2024-01-01T00:00:00Z"
-        );
+                "2024-01-01T00:00:00Z",
+                new ReadabilityScores(8.5, 65.0),
+                List.of(new ReadabilityScores(8.0, 66.0)));
     }
 
     @Test
