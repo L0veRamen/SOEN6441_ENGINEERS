@@ -15,8 +15,7 @@ GET   /notilytics        controllers.SearchController.search(request: play.mvc.H
 # ==================== INDIVIDUAL TASK ROUTES (PLACEHOLDERS) ====================
 
 # Individual A: Source Profile
-# TODO: Implement SourceProfileController
-# GET     /source/:id                  controllers.SourceProfileController.view(request: play.mvc.Http.Request, id: String)
+GET     /source/:id                  controllers.SourceProfileController.view(request: play.mvc.Http.Request, id: String)
 
 # Individual B: Word Statistics
 # TODO: Implement WordStatsController

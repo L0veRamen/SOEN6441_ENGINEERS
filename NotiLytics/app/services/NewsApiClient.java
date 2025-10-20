@@ -156,18 +156,24 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.typesafe.config.Config;
 import models.Article;
+import models.SourceProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import play.libs.ws.WSClient;
 import play.libs.ws.WSResponse;
+import play.libs.Json;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
@@ -194,6 +200,7 @@ public class NewsApiClient {
     private final String apiKey;
     private final String baseUrl;
     private final Cache<String, SearchResponse> searchCache;
+    private final List<SourceProfile> sourceCache;
 
     /**
      * Constructor with dependency injection
@@ -229,7 +236,7 @@ public class NewsApiClient {
                 .expireAfterWrite(cacheTTL)
                 .maximumSize(maxSize)
                 .build();
-
+        sourceCache = new ArrayList<>();
         log.info("NewsApiClient configured baseUrl={} cacheTTL={} maxSize={}",
                 this.baseUrl, cacheTTL, maxSize);
     }
@@ -408,4 +415,151 @@ public class NewsApiClient {
      * @author Chen Qian
      */
     public record SearchResponse(List<Article> articles, int totalResults) {}
+
+
+    // Edits for source profile search
+    /**
+     * Search source profiles using NewsAPI /v2/top-headlines endpoint
+     * Uses caching to prevent duplicate API calls
+     *
+     * @param query    Search query string
+     * @return CompletionStage with requested source profile
+     * @author Yuhao Ma
+     */
+    public CompletionStage<SourceProfile> searchSourceProfile(String query) {
+        // Try cache first
+        if (!sourceCache.isEmpty()) {
+            log.debug("Cache HIT for source profiles");
+            var cachedResult = filterSearchProfile(sourceCache, query);
+            if (cachedResult.isPresent()) {
+                return CompletableFuture.completedFuture(cachedResult.get());
+            }
+        }
+
+        log.debug("Cache source profiles not loaded for " + query);
+
+        // Cache miss - fetch from API
+        String url = String.format(
+                "%s/top-headlines/sources?apiKey=%s",
+                baseUrl, apiKey
+        );
+
+        return wsClient.url(url)
+                .get()
+                .thenApply(response -> {
+                    JsonNode root = response.asJson();
+                    String status = root.has("status") ? root.get("status").asText() : "";
+                    if (!"ok".equals(status)) {
+                        String message = root.has("message") ? root.get("message").asText() : "Unknown error";
+                        log.warn("NewsAPI returned error status: {}", message);
+                        return null;
+                    }
+                    root = root.get("sources");
+                    List<SourceProfile> sources = StreamSupport.stream(root.spliterator(), false)
+                            .map(node -> Json.fromJson(node, SourceProfile.class))
+                            .toList();
+                    // Cache successful responses
+                    sourceCache.clear();
+                    sourceCache.addAll(sources);
+                    var result = filterSearchProfile(sources, query);
+                    if (result.isEmpty()) {
+                        log.warn("{} is not found in source profile response", query);
+                        return null;
+                    }
+                    return result.get();
+                })
+                .exceptionally(throwable -> {
+                    log.error("NewsAPI call failed for query '{}': {}", query, throwable.getMessage(), throwable);
+                    return null;
+                });
+    }
+
+    private Optional<SourceProfile> filterSearchProfile(List<SourceProfile> sources, String query) {
+        return sources.stream()
+                .filter(profile -> profile.id.equalsIgnoreCase(query) || profile.name.equalsIgnoreCase(query))
+                .findAny();
+    }
+
+    /**
+     * Search articles by source name
+     * Uses caching to prevent duplicate API calls
+     *
+     * @param query    Source name
+     * @return CompletionStage with a list of articles and total count
+     * @author Yuhao Ma
+     */
+    public CompletionStage<SearchResponse> searchEverythingBySource(String query) {
+        // Create cache key
+        String cacheKey = String.format("Source:%s", query);
+
+        // Try cache first
+        SearchResponse cached = searchCache.getIfPresent(cacheKey);
+        if (cached != null) {
+            log.debug("Cache HIT for key: {}", cacheKey);
+            return CompletableFuture.completedFuture(cached);
+        }
+
+        log.debug("Cache MISS for key: {}", cacheKey);
+
+        // Cache miss - fetch from API
+        String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
+        String url = String.format(
+                "%s/top-headlines?sources=%s&pageSize=10&apiKey=%s",
+                baseUrl, encodedQuery, apiKey
+        );
+
+        return wsClient.url(url)
+                .get()
+                .thenCompose(response -> {
+                    SearchResponse result = parseSearchResponse(response);
+                    // Cache successful responses
+                    if (!result.articles().isEmpty()) {
+                        searchCache.put(cacheKey, result);
+                        return CompletableFuture.completedFuture(result);
+                    } else {
+                        return searchEverythingByFilter(query).thenApply( res -> {
+                            searchCache.put(cacheKey, res);
+                            return res;
+                        });
+                    }
+                })
+                .exceptionally(throwable -> {
+                    log.error("NewsAPI call failed for query '{}': {}", query, throwable.getMessage(), throwable);
+                    return new SearchResponse(List.of(), 0);
+                });
+    }
+
+    /**
+     * Search articles by everything endpoint and then filter with the source name
+     * Only called if searchEverythingBySource does not find result
+     *
+     * @param query    Source name
+     * @return CompletionStage with a list of articles and total count
+     * @author Yuhao Ma
+     */
+    public CompletionStage<SearchResponse> searchEverythingByFilter(String query) {
+        String cacheKey = String.format("Source:%s", query);
+        String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
+        String url = String.format(
+                "%s/everything?q=%s&apiKey=%s",
+                baseUrl, encodedQuery, apiKey
+        );
+        return wsClient.url(url)
+                .get()
+                .thenApply(response -> {
+                    SearchResponse result = parseSearchResponse(response);
+                    List<Article> arts = result.articles.stream()
+                            .filter(article -> article.sourceName().equalsIgnoreCase(query))
+                            .sorted(Comparator.comparing(a -> Instant.parse(a.publishedAt()), Comparator.reverseOrder()))
+                            .limit(10)
+                            .toList();
+                    result = new SearchResponse(arts, arts.size());
+                    return result;
+                })
+                .exceptionally(throwable -> {
+                    log.error("NewsAPI call failed for query '{}': {}", query, throwable.getMessage(), throwable);
+                    return new SearchResponse(List.of(), 0);
+                });
+    }
+
 }

@@ -208,3 +208,10 @@ button:hover {
     background-color: #e8f5e9;
     color: #388e3c;
 }
+
+.profile-card {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
