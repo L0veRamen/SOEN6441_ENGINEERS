@@ -1,13 +1,10 @@
 package services;
 
 import models.Article;
-import models.SearchBlock;
 import models.SourceProfile;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 

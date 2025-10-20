@@ -1,29 +1,17 @@
 package controllers;
 
-import play.mvc.*;
 
 /**
  * This controller contains an action to handle HTTP requests
  * to the application's home page.
  */
-//public class HomeController extends Controller {
-//
-//    /**
-//     * An action that renders an HTML page with a welcome message.
-//     * The configuration in the <code>routes</code> file means that
-//     * this method will be called when the application receives a
-//     * <code>GET</code> request with a path of <code>/</code>.
-//     */
-//    public Result index() {
-//        return ok(views.html.index.render());
-//    }
-//
-//}
 
 import models.SearchBlock;
+import models.SourceProfile;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
+import services.ProfileService;
 import services.SearchHistoryService;
 
 import javax.inject.Inject;
@@ -40,12 +28,13 @@ import java.util.concurrent.CompletionStage;
  * - Extract session ID from Play session
  * - NO business logic (thin controller)
  *
- * @author Chen Qian
+ * @author Group
  */
 @Singleton
 public class HomeController extends Controller {
 
     private final SearchHistoryService historyService;
+    private final ProfileService profileService;
 
     /**
      * Constructor with dependency injection
@@ -54,8 +43,9 @@ public class HomeController extends Controller {
      * @author Chen Qian
      */
     @Inject
-    public HomeController(SearchHistoryService historyService) {
+    public HomeController(SearchHistoryService historyService, ProfileService profileService) {
         this.historyService = historyService;
+        this.profileService = profileService;
     }
 
     /**
@@ -85,5 +75,25 @@ public class HomeController extends Controller {
     private String getSessionId(Http.Request request) {
         return request.session().get("sessionId")
                 .orElse(java.util.UUID.randomUUID().toString());
+    }
+
+    /**
+     * Display source profile page
+     *
+     * @param request HTTP request with session
+     * @param query   Name or id of the source
+     * @return Async result with rendered view
+     * @author Yuhao Ma
+     */
+    public CompletionStage<Result> source(Http.Request request, String query) {
+        var result = profileService.search(query);
+        return result.thenApply( res -> {
+            if (res.source() == null) {
+                var source = new SourceProfile();
+                source.name = query;
+                return ok(views.html.profile.render(source, res.articles()));
+            }
+            return ok(views.html.profile.render(res.source(), res.articles()));
+        });
     }
 }

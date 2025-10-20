@@ -172,7 +172,6 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -189,7 +188,7 @@ import java.util.stream.StreamSupport;
  * - Handle API errors gracefully
  * - Cache search results to prevent duplicate API calls
  *
- * @author Chen Qian
+ * @author Group
  */
 @Singleton
 public class NewsApiClient {
@@ -489,10 +488,7 @@ public class NewsApiClient {
      * @author Yuhao Ma
      */
     public CompletionStage<SearchResponse> searchEverythingBySource(String query) {
-        // Create cache key
         String cacheKey = String.format("Source:%s", query);
-
-        // Try cache first
         SearchResponse cached = searchCache.getIfPresent(cacheKey);
         if (cached != null) {
             log.debug("Cache HIT for key: {}", cacheKey);
@@ -517,7 +513,7 @@ public class NewsApiClient {
                         searchCache.put(cacheKey, result);
                         return CompletableFuture.completedFuture(result);
                     } else {
-                        return searchEverythingByFilter(query).thenApply( res -> {
+                        return searchEverythingByFilter(encodedQuery).thenApply( res -> {
                             searchCache.put(cacheKey, res);
                             return res;
                         });
@@ -538,11 +534,9 @@ public class NewsApiClient {
      * @author Yuhao Ma
      */
     public CompletionStage<SearchResponse> searchEverythingByFilter(String query) {
-        String cacheKey = String.format("Source:%s", query);
-        String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
         String url = String.format(
                 "%s/everything?q=%s&apiKey=%s",
-                baseUrl, encodedQuery, apiKey
+                baseUrl, query, apiKey
         );
         return wsClient.url(url)
                 .get()

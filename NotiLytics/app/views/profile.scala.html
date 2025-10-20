@@ -5,14 +5,14 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>NotiLytics - News Search & Analysis</title>
+        <title>Source Profile: @profile.name</title>
         <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
     </head>
     <div class="container">
         <!-- Source Profile section -->
         <div class="profile-card">
             @if(profile.description == null) {
-                <p>Profile info for @profile.name is not available</p>
+                <p>Profile info for @profile.name is not available from NewsApi</p>
             } else {
                 <h2>@profile.name</h2>
                 <p><strong>Category:</strong> @profile.category</p>
