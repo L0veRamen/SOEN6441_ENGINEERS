@@ -63,11 +63,27 @@
                                     <span>📊 <strong>@block.totalResults()</strong> total results</span>
                                     <span>🔄 Sorted by: <strong>@block.sortBy()</strong></span>
                                     <span>🕒 @block.createdAtIso()</span>
+                                    @* ============================================ *@
+                                    @* TASK E: Display Average Readability Scores  *@
+                                    @* ============================================ *@
+                                    @if(block.readability() != null && block.readability().isValid()) {
+                                        <span class="readability-badge">
+                                            📖 <strong>Readability:</strong>
+                                            Grade Level: <strong>@{
+                                            String.format("%.1f", block.readability().gradeLevel())
+                                        }</strong> |
+                                            Reading Ease: <strong>@{
+                                            String.format("%.1f", block.readability().readingEase())
+                                        }</strong>
+                                            <span class="readability-interpretation">
+                                                (@block.readability().getReadingEaseInterpretation())</span>
+                                        </span>
+                                    }
                                 </div>
                             </div>
 
                             @if(block.articles() != null && !block.articles().isEmpty()) {
-                                @for(article <- block.articles()) {
+                                @for((article, idx) <- block.articles().zipWithIndex) {
                                     <div class="article">
                                         <div class="article-title">
                                         @if(article.hasUrl()) {
@@ -85,6 +101,17 @@
                                             }
                                             @if(article.publishedAt() != null && !article.publishedAt().isEmpty()) {
                                                 | Published: @article.publishedAt()
+                                            }
+                                            @* OPTIONAL: Individual article readability *@
+                                            @if(block.articleReadability() != null && idx < block.articleReadability().size()) {
+                                                @defining(block.articleReadability().get(idx)) { scores =>
+                                                    @if(scores.isValid()) {
+                                                        <span class="article-readability-inline">
+                                                            | 📚 Grade: <strong>@{String.format("%.1f", scores.gradeLevel())}</strong>
+                                                            Ease: <strong>@{String.format("%.1f", scores.readingEase())}</strong>
+                                                        </span>
+                                                    }
+                                                }
                                             }
                                         </div>
 

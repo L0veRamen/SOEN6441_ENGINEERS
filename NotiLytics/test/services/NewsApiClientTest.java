@@ -7,6 +7,7 @@ import com.typesafe.config.ConfigFactory;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import models.Article;
+import models.SourceProfile;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -296,5 +297,178 @@ public class NewsApiClientTest {
 
         assertEquals(1, response.articles().size());
         assertEquals("Valid Article", response.articles().get(0).title());
+    }
+
+    @Test
+    public void searchSourceProfileWhenFound() {
+        ObjectNode root = mapper.createObjectNode();
+        root.put("status", "ok");
+        ArrayNode sources = root.putArray("sources");
+        ObjectNode sourceNode = sources.addObject();
+        sourceNode.put("id", "techcrunch");
+        sourceNode.put("name", "TechCrunch");
+
+        when(wsClient.url(anyString())).thenReturn(wsRequest);
+        when(wsRequest.get()).thenReturn(CompletableFuture.completedFuture(wsResponse));
+        when(wsResponse.asJson()).thenReturn(root);
+
+        // Act
+        SourceProfile profile = client.searchSourceProfile("techcrunch")
+                .toCompletableFuture().join();
+
+        // Assert
+        assertNotNull(profile);
+        assertEquals("techcrunch", profile.id);
+        assertEquals("TechCrunch", profile.name);
+
+        reset(wsClient, wsRequest, wsResponse);
+
+        // Second call: should be served from cache, no wsClient.url() invoked
+        SourceProfile second = client.searchSourceProfile("techcrunch")
+                .toCompletableFuture().join();
+
+        assertNotNull(second);
+        assertEquals("techcrunch", second.id);
+
+        // Verify no HTTP call was made on cache hit
+        verifyNoInteractions(wsClient);
+
+        // try a cache miss
+        reset(wsClient, wsRequest, wsResponse);
+        when(wsClient.url(anyString())).thenReturn(wsRequest);
+        when(wsRequest.get()).thenReturn(CompletableFuture.completedFuture(wsResponse));
+        when(wsResponse.asJson()).thenReturn(root);
+        SourceProfile third = client.searchSourceProfile("cnn")
+                .toCompletableFuture().join();
+        assertNull(third);
+    }
+
+    @Test
+    public void searchSourceProfileOnErrorStatus() {
+        ObjectNode root = mapper.createObjectNode();
+        root.put("status", "error");
+        root.put("message", "Invalid API key");
+
+        when(wsClient.url(anyString())).thenReturn(wsRequest);
+        when(wsRequest.get()).thenReturn(CompletableFuture.completedFuture(wsResponse));
+        when(wsResponse.asJson()).thenReturn(root);
+
+        // Act
+        SourceProfile profile = client.searchSourceProfile("techcrunch")
+                .toCompletableFuture().join();
+        assertNull(profile);
+    }
+
+    @Test
+    public void searchEverythingBySourceWhenFound() {
+        // Arrange: API returns ok with one article
+        ObjectNode root = mapper.createObjectNode();
+        root.put("status", "ok");
+        root.put("totalResults", 1);
+        ArrayNode articles = root.putArray("articles");
+        ObjectNode articleNode = articles.addObject();
+        articleNode.put("title", "Test Article");
+        articleNode.put("url", "https://example.com");
+        articleNode.put("description", "desc");
+        articleNode.put("publishedAt", "2024-01-01T00:00:00Z");
+        ObjectNode sourceNode = mapper.createObjectNode();
+        sourceNode.put("id", "techcrunch");
+        sourceNode.put("name", "TechCrunch");
+        articleNode.set("source", sourceNode);
+
+        when(wsClient.url(anyString())).thenReturn(wsRequest);
+        when(wsRequest.get()).thenReturn(CompletableFuture.completedFuture(wsResponse));
+        when(wsResponse.getStatus()).thenReturn(200);
+        when(wsResponse.asJson()).thenReturn(root);
+
+        // Act
+        NewsApiClient.SearchResponse result = client.searchEverythingBySource("techcrunch")
+                .toCompletableFuture().join();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.articles().size());
+        assertEquals("Test Article", result.articles().get(0).title());
+
+        // Second call should hit cache
+        reset(wsClient, wsRequest, wsResponse);
+        NewsApiClient.SearchResponse cached = client.searchEverythingBySource("techcrunch")
+                .toCompletableFuture().join();
+        assertEquals(1, cached.articles().size());
+        verifyNoInteractions(wsClient);
+    }
+
+    @Test
+    public void searchEverythingBySourceFallsBackToFilter() {
+        // Arrange: API returns ok but no articles
+        ObjectNode root = mapper.createObjectNode();
+        root.put("status", "ok");
+        root.put("totalResults", 0);
+        root.putArray("articles"); // empty
+
+        when(wsClient.url(anyString())).thenReturn(wsRequest);
+        when(wsRequest.get()).thenReturn(CompletableFuture.completedFuture(wsResponse));
+        when(wsResponse.getStatus()).thenReturn(200);
+        when(wsResponse.asJson()).thenReturn(root);
+
+        // Act
+        NewsApiClient.SearchResponse result = client.searchEverythingBySource("cnn")
+                .toCompletableFuture().join();
+
+        // Assert: should fallback to filter, but since we didn’t stub that call, expect empty
+        assertNotNull(result);
+        assertTrue(result.articles().isEmpty());
+    }
+
+    @Test
+    public void searchEverythingByFilterWhenFound() {
+        // Arrange: API returns ok with one article from CNN
+        ObjectNode root = mapper.createObjectNode();
+        root.put("status", "ok");
+        root.put("totalResults", 1);
+        ArrayNode articles = root.putArray("articles");
+        ObjectNode articleNode = articles.addObject();
+        articleNode.put("title", "CNN Article");
+        articleNode.put("url", "https://cnn.com");
+        articleNode.put("description", "desc");
+        articleNode.put("publishedAt", "2024-01-01T00:00:00Z");
+        ObjectNode sourceNode = mapper.createObjectNode();
+        sourceNode.put("id", "cnn");
+        sourceNode.put("name", "CNN");
+        articleNode.set("source", sourceNode);
+
+        when(wsClient.url(anyString())).thenReturn(wsRequest);
+        when(wsRequest.get()).thenReturn(CompletableFuture.completedFuture(wsResponse));
+        when(wsResponse.getStatus()).thenReturn(200);
+        when(wsResponse.asJson()).thenReturn(root);
+
+        // Act
+        NewsApiClient.SearchResponse result = client.searchEverythingByFilter("cnn")
+                .toCompletableFuture().join();
+
+        // Assert: should filter and return CNN article
+        assertEquals(1, result.articles().size());
+        assertEquals("CNN Article", result.articles().get(0).title());
+    }
+
+    @Test
+    public void searchEverythingByFilterOnErrorStatus() {
+        // Arrange: API returns error
+        ObjectNode root = mapper.createObjectNode();
+        root.put("status", "error");
+        root.put("message", "Invalid API key");
+
+        when(wsClient.url(anyString())).thenReturn(wsRequest);
+        when(wsRequest.get()).thenReturn(CompletableFuture.completedFuture(wsResponse));
+        when(wsResponse.getStatus()).thenReturn(200);
+        when(wsResponse.asJson()).thenReturn(root);
+
+        // Act
+        NewsApiClient.SearchResponse result = client.searchEverythingByFilter("cnn")
+                .toCompletableFuture().join();
+
+        // Assert: should return empty response
+        assertTrue(result.articles().isEmpty());
+        assertEquals(0, result.totalResults());
     }
 }
