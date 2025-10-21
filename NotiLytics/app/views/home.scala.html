@@ -54,7 +54,11 @@
                     @for(block <- searchHistory) {
                         <div class="search-block">
                             <div class="search-block-header">
-                                <h3>@block.query()</h3>
+                                <h3>@block.query()
+                                    <a href="/wordstats?q=@block.query()" class="badge badge-info" style="text-decoration: none; margin-left: 10px;">
+                                        Word Stats
+                                    </a>
+                                </h3>
                                 <div class="search-meta">
                                     <span>📊 <strong>@block.totalResults()</strong> total results</span>
                                     <span>🔄 Sorted by: <strong>@block.sortBy()</strong></span>
