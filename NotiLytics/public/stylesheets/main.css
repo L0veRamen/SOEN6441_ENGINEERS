@@ -215,3 +215,67 @@ button:hover {
     border-radius: 6px;
     margin-bottom: 20px;
 }
+
+/* ============================================ */
+/* TASK E: Readability Scores Styling          */
+/* ============================================ */
+
+.readability-badge {
+    display: inline-block;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-left: 4px solid #4caf50;
+    border-radius: 4px;
+    font-size: 0.9em;
+    margin-top: 8px;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.readability-badge strong {
+    color: #2e7d32;
+}
+
+.readability-interpretation {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #fff;
+    border-radius: 12px;
+    font-size: 0.85em;
+    color: #666;
+    margin-left: 8px;
+    font-style: italic;
+}
+
+/* Optional: Color code by difficulty */
+.readability-badge[data-difficulty="very-easy"],
+.readability-badge[data-difficulty="easy"] {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-left-color: #4caf50;
+}
+
+.readability-badge[data-difficulty="standard"] {
+    background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
+    border-left-color: #fbc02d;
+}
+
+.readability-badge[data-difficulty="difficult"],
+.readability-badge[data-difficulty="very-difficult"] {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    border-left-color: #e53935;
+}
+
+/* Individual article readability (if you add it) */
+.article-readability {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 2px 8px;
+    background-color: #f5f5f5;
+    border-radius: 3px;
+    font-size: 0.8em;
+    color: #666;
+}
+
+.article-readability strong {
+    color: #333;
+}
