@@ -27,6 +27,7 @@ import play.mvc.Result;
 import services.ProfileService;
 import services.SearchHistoryService;
 import services.SearchService;
+import services.WordStatsService;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,6 +43,7 @@ public class HomeController extends Controller {
     private final SearchService searchService;
     private final SearchHistoryService historyService;
     private final ProfileService profileService;
+    private final WordStatsService wordStatsService;
 
     /**
      * Constructor with dependency injection.
@@ -55,10 +57,12 @@ public class HomeController extends Controller {
     @Inject
     public HomeController(SearchService searchService,
                           SearchHistoryService historyService,
-                          ProfileService profileService) {
+                          ProfileService profileService,
+                          WordStatsService wordStatsService) {
         this.searchService = searchService;
         this.historyService = historyService;
         this.profileService = profileService;
+        this.wordStatsService = wordStatsService;
     }
 
     /**
@@ -77,6 +81,17 @@ public class HomeController extends Controller {
         return CompletableFuture.completedFuture(
                 ok(views.html.home.render(history, request))
         );
+    }
+    
+    public CompletionStage<Result> wordStats(Http.Request request, String query) {
+        if (query == null || query.isBlank()) {
+            return java.util.concurrent.CompletableFuture.completedFuture(
+                badRequest("Search query is required")
+            );
+        }
+        
+        return wordStatsService.computeWordStats(query)
+            .thenApply(stats -> ok(views.html.wordstats.render(stats, request)));
     }
 
     /**

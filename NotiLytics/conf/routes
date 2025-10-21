@@ -18,12 +18,11 @@ GET   /notilytics        controllers.SearchController.search(request: play.mvc.H
 GET     /source/:id                  controllers.HomeController.source(request: play.mvc.Http.Request, id: String)
 
 # Individual B: Word Statistics
-# TODO: Implement WordStatsController
-GET     /wordstats                   controllers.WordStatsController.view(request: play.mvc.Http.Request, q: String)
+GET     /wordstats                   controllers.HomeController.wordStats(request: play.mvc.Http.Request, q: String)
 
 # Individual C: News Sources
-# TODO: Implement NewsSourcesController
-# GET     /sources                     controllers.NewsSourcesController.list(request: play.mvc.Http.Request, country: String ?= "", category: String ?= "", language: String ?= "")
+# TODO: Implement NewsSourcesController or add to HomeController
+# GET     /sources                     controllers.HomeController.sources(request: play.mvc.Http.Request, country: String ?= "", category: String ?= "", language: String ?= "")
 
 # Individual D: Sentiment Analysis
 # Integrated into SearchBlock - no separate route needed
