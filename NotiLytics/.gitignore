@@ -212,3 +212,4 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/java,intellij+all,macos,windows,visualstudiocode
+/bin/

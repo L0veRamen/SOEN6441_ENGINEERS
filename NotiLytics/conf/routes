@@ -19,7 +19,7 @@ GET     /source/:id                  controllers.HomeController.source(request: 
 
 # Individual B: Word Statistics
 # TODO: Implement WordStatsController
-# GET     /wordstats                   controllers.WordStatsController.view(request: play.mvc.Http.Request, q: String)
+GET     /wordstats                   controllers.WordStatsController.view(request: play.mvc.Http.Request, q: String)
 
 # Individual C: News Sources
 # TODO: Implement NewsSourcesController
