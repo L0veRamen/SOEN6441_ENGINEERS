@@ -19,7 +19,7 @@ GET   /notilytics     controllers.HomeController.search(request: play.mvc.Http.R
 GET     /source/:id                  controllers.HomeController.source(request: play.mvc.Http.Request, id: String)
 
 # Individual B: Word Statistics
-GET     /wordstats                   controllers.WordStatsController.view(request: play.mvc.Http.Request, q: String)
+GET     /wordstats                   controllers.HomeController.wordStats(request: play.mvc.Http.Request, q: String)
 
 # Individual C: News Sources
 # TODO: Implement NewsSourcesController or add to HomeController

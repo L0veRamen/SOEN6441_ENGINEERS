@@ -11,7 +11,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -30,9 +29,7 @@ public class WordStatsService {
         this.newsApiClient = newsApiClient;
     }
     
-    public CompletionStage<WordStats> computeStats(String query) {
-        log.info("Computing word stats for query: '{}'", query);
-        
+    public CompletionStage<WordStats> computeWordStats(String query) {
         return newsApiClient.searchEverything(query, "publishedAt", 50)
             .thenApply(response -> {
                 List<Article> articles = response.articles();
