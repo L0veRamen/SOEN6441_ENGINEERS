@@ -1,0 +1,63 @@
+@(profile: SourceProfile, articles: java.util.List[Article])
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Source Profile: @profile.name</title>
+        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
+    </head>
+    <div class="container">
+        <!-- Source Profile section -->
+        <div class="profile-card">
+            @if(profile.description == null) {
+                <p>Profile info for @profile.name is not available from NewsApi</p>
+            } else {
+                <h2>@profile.name</h2>
+                <p><strong>Category:</strong> @profile.category</p>
+                <p><strong>Language:</strong> @profile.language</p>
+                <p><strong>Country:</strong> @profile.country</p>
+                <p><a href="@profile.url" target="_blank">@profile.url</a></p>
+                <p>@profile.description</p>
+            }
+        </div>
+
+        <div class="search-block">
+            @if(articles != null && !articles.isEmpty) {
+                @for(article <- articles) {
+                    <div class="article">
+                        <div class="article-title">
+                        @if(article.hasUrl()) {
+                            <a href="@article.url()" target="_blank" rel="noopener noreferrer">
+                            @article.title()
+                            </a>
+                        } else {
+                            @article.title()
+                        }
+                        </div>
+
+                        <div class="article-meta">
+                            @if(article.hasSource()) {
+                                Source: <a href="/source/@article.getSourceId()">@article.getSourceDisplayName()</a>
+                            }
+                            @if(article.publishedAt() != null && !article.publishedAt().isEmpty()) {
+                                | Published: @article.publishedAt()
+                            }
+                        </div>
+
+                        @if(article.description() != null && !article.description().isEmpty()) {
+                            <div class="article-description">
+                            @article.description()
+                            </div>
+                        }
+                    </div>
+                }
+            } else {
+                <div class="no-results">
+                    No articles found for this search.
+                </div>
+            }
+        </div>
+    </div>
+</html>

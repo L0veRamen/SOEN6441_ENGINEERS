@@ -58,4 +58,15 @@ public record Article(
         }
         return "Unknown Source";
     }
+
+    /**
+     * Get search key for source profile
+     * Use id first or name if id is not provided
+     *
+     * @return Source id or name
+     * @author Yuhao Ma
+     */
+    public String getSourceId() {
+        return (sourceId != null && !sourceId.isBlank())? sourceId : getSourceDisplayName();
+    }
 }

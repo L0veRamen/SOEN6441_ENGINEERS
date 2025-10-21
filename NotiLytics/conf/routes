@@ -9,22 +9,22 @@ GET   /               controllers.HomeController.index(request: play.mvc.Http.Re
 GET   /Notilytics     controllers.HomeController.index(request: play.mvc.Http.Request)
 
 # ===== Search (reads q & sortBy from query string) =====
-GET   /notilytics        controllers.SearchController.search(request: play.mvc.Http.Request)
+# Now handled by HomeController instead of SearchController
+GET   /notilytics     controllers.HomeController.search(request: play.mvc.Http.Request)
 
 
 # ==================== INDIVIDUAL TASK ROUTES (PLACEHOLDERS) ====================
 
 # Individual A: Source Profile
-# TODO: Implement SourceProfileController
-# GET     /source/:id                  controllers.SourceProfileController.view(request: play.mvc.Http.Request, id: String)
+GET     /source/:id                  controllers.HomeController.source(request: play.mvc.Http.Request, id: String)
 
 # Individual B: Word Statistics
-# TODO: Implement WordStatsController
-# GET     /wordstats                   controllers.WordStatsController.view(request: play.mvc.Http.Request, q: String)
+# TODO: Implement WordStatsController or add to HomeController
+# GET     /wordstats                   controllers.HomeController.wordStats(request: play.mvc.Http.Request, q: String)
 
 # Individual C: News Sources
-# TODO: Implement NewsSourcesController
-# GET     /sources                     controllers.NewsSourcesController.list(request: play.mvc.Http.Request, country: String ?= "", category: String ?= "", language: String ?= "")
+# TODO: Implement NewsSourcesController or add to HomeController
+# GET     /sources                     controllers.HomeController.sources(request: play.mvc.Http.Request, country: String ?= "", category: String ?= "", language: String ?= "")
 
 # Individual D: Sentiment Analysis
 # Integrated into SearchBlock - no separate route needed

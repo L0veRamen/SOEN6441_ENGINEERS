@@ -93,7 +93,7 @@
 
                                         <div class="article-meta">
                                             @if(article.hasSource()) {
-                                                Source: <span class="source-link">@article.getSourceDisplayName()</span>
+                                                Source: <a href="/source/@article.getSourceId()">@article.getSourceDisplayName()</a>
                                             }
                                             @if(article.publishedAt() != null && !article.publishedAt().isEmpty()) {
                                                 | Published: @article.publishedAt()

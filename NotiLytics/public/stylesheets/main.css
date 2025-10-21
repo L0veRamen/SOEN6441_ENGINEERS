@@ -209,6 +209,13 @@ button:hover {
     color: #388e3c;
 }
 
+.profile-card {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
 /* ============================================ */
 /* TASK E: Readability Scores Styling          */
 /* ============================================ */
