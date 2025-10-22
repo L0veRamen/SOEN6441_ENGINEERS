@@ -30,7 +30,7 @@ public class WordStatsTest {
         WordStats.WordFrequency frequency = new WordStats.WordFrequency("test", 2);
 
         assertEquals("test", frequency.word());
-        assertEquals(22, frequency.count());
+        assertEquals(2, frequency.count());
     }
 
     @Test
