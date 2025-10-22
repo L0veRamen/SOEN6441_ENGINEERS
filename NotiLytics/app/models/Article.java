@@ -67,6 +67,6 @@ public record Article(
      * @author Yuhao Ma
      */
     public String getSourceId() {
-        return (sourceId != null && !sourceId.isBlank())? sourceId : getSourceDisplayName();
+        return (sourceId != null)? sourceId : getSourceDisplayName();
     }
 }

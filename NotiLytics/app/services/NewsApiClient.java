@@ -513,7 +513,7 @@ public class NewsApiClient {
                         searchCache.put(cacheKey, result);
                         return CompletableFuture.completedFuture(result);
                     } else {
-                        return searchEverythingByFilter(encodedQuery).thenApply( res -> {
+                        return searchEverythingByFilter(query).thenApply( res -> {
                             searchCache.put(cacheKey, res);
                             return res;
                         });
@@ -536,7 +536,7 @@ public class NewsApiClient {
     public CompletionStage<SearchResponse> searchEverythingByFilter(String query) {
         String url = String.format(
                 "%s/everything?q=%s&apiKey=%s",
-                baseUrl, query, apiKey
+                baseUrl, URLEncoder.encode(query, StandardCharsets.UTF_8), apiKey
         );
         return wsClient.url(url)
                 .get()
