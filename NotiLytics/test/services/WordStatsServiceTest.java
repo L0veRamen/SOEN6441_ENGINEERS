@@ -66,16 +66,21 @@ public class WordStatsServiceTest {
                   "articles": [
                     {
                       "source": {"id": "test", "name": "Test Source"},
+                      "author": "Author 1",
                       "title": "Test 1",
-                      "description": "this is a test, testing the test",
+                      "description": "this is a test, testing a test",
                       "url": "https://test.com/1",
+                      "content": "Test123",
                       "publishedAt": "2024-01-01T00:00:00Z"
+                      
                     },
                     {
                       "source": {"id": "test", "name": "Test Source"},
+                      "author": null,
                       "title": "Test 2",
-                      "description": "this is not a test, testing the test",
+                      "description": "this is not a test, testing another test",
                       "url": "https://test.com/2",
+                      "content": null,
                       "publishedAt": "2024-01-01T01:00:00Z"
                     }
                   ]
@@ -93,18 +98,18 @@ public class WordStatsServiceTest {
         assertEquals(2, stats.totalArticles());
         assertTrue(stats.uniqueWords() > 0);
         assertTrue(stats.totalWords() > 0);
-        assertEquals(15, stats.totalWords());
-        assertEquals(7, stats.uniqueWords());
+        assertEquals(12, stats.totalWords());
+        assertEquals(6, stats.uniqueWords());
         assertNotNull(stats.wordFrequencies());
         assertFalse(stats.wordFrequencies().isEmpty());
 
         List<WordStats.WordFrequency> frequencies = stats.wordFrequencies();
         
         assertEquals("test", frequencies.get(0).word());
-        assertEquals(2, frequencies.get(0).count());
+        assertEquals(4, frequencies.get(0).count());
         
         assertEquals("testing", frequencies.get(1).word());
-        assertEquals(1, frequencies.get(1).count());
+        assertEquals(2, frequencies.get(1).count());
           
         // Verify descending order
         for (int i = 0; i < frequencies.size() - 1; i++) {
