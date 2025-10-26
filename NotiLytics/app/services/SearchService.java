@@ -2,7 +2,7 @@ package services;
 
 import models.ReadabilityScores;
 import models.SearchBlock;
-
+import models.Sentiment;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.ZonedDateTime;
@@ -28,7 +28,7 @@ public class SearchService {
 
     private final NewsApiClient newsApiClient;
     private final ReadabilityService readabilityService;  // ADDED for Task E
-    
+
     /**
      * Constructor with dependency injection
      *
@@ -53,17 +53,19 @@ public class SearchService {
     public CompletionStage<SearchBlock> search(String query, String sortBy) {
         return newsApiClient.searchEverything(query, sortBy, 10)
                 .thenApply(response -> {
-                    
+
                     // Calculate readability scores (Task E)
                     ReadabilityScores averageReadability  = readabilityService.calculateAverageReadability(
                             response.articles()
                     );
-                    
+
                     // OPTIONAL: Calculate individual scores
                     List<ReadabilityScores> individualScores = response.articles().stream()
                             .map(readabilityService::calculateArticleReadability)
                             .collect(Collectors.toList());
-                    
+
+                    Sentiment articleSentiment = SentimentAnalysisService.analyzeArticles(response.articles());
+
                     return new SearchBlock(
                             query,
                             sortBy,
@@ -71,7 +73,8 @@ public class SearchService {
                             response.articles(),
                             ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT),
                             averageReadability ,  // ADDED for Task E
-                            individualScores  // Add this field to SearchBlock
+                            individualScores,    // Add this field to SearchBlock
+                            articleSentiment
                     );
                 });
     }
