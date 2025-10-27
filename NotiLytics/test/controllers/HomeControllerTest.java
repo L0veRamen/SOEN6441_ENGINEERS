@@ -8,6 +8,7 @@ import models.Sentiment;
 import models.WordStats;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.Nested;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -276,7 +277,7 @@ public class HomeControllerTest {
 
         Http.Request request = new Http.RequestBuilder()
                 .method("GET")
-                .uri("/")
+                .uri("/Notilytics")
                 .session("sessionId", "empty-session")
                 .build();
 
@@ -319,7 +320,10 @@ public class HomeControllerTest {
         Result result = controller.search(request).join();
 
         assertEquals(SEE_OTHER, result.status());
+        assertTrue(result.redirectLocation().isPresent());
+        assertEquals("/Notilytics", result.redirectLocation().get());
         verify(searchService, times(1)).search("java", "publishedAt");
+        verify(historyService, times(1)).push(anyString(), eq(mockBlock));
     }
 
     /**
