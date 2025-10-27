@@ -4,6 +4,7 @@ import models.Article;
 import models.ReadabilityScores;
 import models.SearchBlock;
 import models.SourceProfile;
+import models.Sentiment;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -75,9 +76,13 @@ public class HomeControllerTest {
                         "source-id",
                         "Source",
                         "2024-01-01T00:00:00Z")),
+
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)));
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.8, 0.1)
+
+        );
 
     }
 
@@ -170,7 +175,9 @@ public class HomeControllerTest {
                         "source-1", "Source", "2024-01-01T00:00:00Z")),
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)));
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.1, 0.8)
+        );
 
         when(searchService.search("java", "publishedAt"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -206,7 +213,9 @@ public class HomeControllerTest {
                         "source-2", "Source", "2024-01-01T00:00:00Z")),
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)));
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.5, 0.5)
+        );
 
         when(searchService.search("spring", "relevancy"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -240,7 +249,9 @@ public class HomeControllerTest {
                         "source-3", "Source", "2024-01-01T00:00:00Z")),
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)));
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.5, 0.5)
+        );
 
         when(searchService.search("ai", "popularity"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -333,7 +344,10 @@ public class HomeControllerTest {
                         "source-4", "Source", "2024-01-01T00:00:00Z")),
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)));
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.1, 0.1)
+
+        );
 
         when(searchService.search("testing", "publishedAt"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -367,7 +381,9 @@ public class HomeControllerTest {
                         "source-5", "Source", "2024-01-01T00:00:00Z")),
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)));
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.2, 0.7)
+        );
 
         when(searchService.search("session", "publishedAt"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -401,7 +417,9 @@ public class HomeControllerTest {
                         "source-6", "Source", "2024-01-01T00:00:00Z")),
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)));
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.1, 0.8)
+                );
 
         when(searchService.search("newsession", "publishedAt"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -465,7 +483,10 @@ public class HomeControllerTest {
                         "source-7", "Source", "2024-01-01T00:00:00Z")),
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)));
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.1, 0.8)
+
+        );
 
         when(searchService.search("java & spring", "publishedAt"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -498,7 +519,9 @@ public class HomeControllerTest {
                         "source-8", "Source", "2024-01-01T00:00:00Z")),
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)));
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.1, 0.8)
+        );
 
         when(searchService.search("default", "publishedAt"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));

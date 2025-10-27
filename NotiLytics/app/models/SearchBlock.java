@@ -13,7 +13,7 @@ import java.util.List;
  * @param createdAtIso  When this search was performed
  * @param readability      Averagescores for all articles (Task E)
  * @param articleReadability  Individual readability score per article
- * 
+ *
  * @author Chen Qian
  */
 public record SearchBlock(
@@ -23,7 +23,8 @@ public record SearchBlock(
         List<Article> articles,
         String createdAtIso,
         ReadabilityScores readability,  // ADDED for Task E
-        List<ReadabilityScores> articleReadability  // Individual scores
+        List<ReadabilityScores> articleReadability, // Individual scores
+        Sentiment articleSentiment // Sentiment of each article, added for Task D
 
 ) {
     public SearchBlock {
