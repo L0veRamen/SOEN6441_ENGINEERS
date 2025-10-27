@@ -1,4 +1,13 @@
 package models;
+/*
+ * Sentiment.java
+ *
+ * Defines an enumeration for news sentiment analysis, including POSITIVE, NEGATIVE, and NEUTRAL.
+ * Provides a static method fromScores to determine sentiment based on happiness and sadness scores,
+ * and a getDescription method to return a symbolic representation of the sentiment.
+ *
+ * @author Ruochen Qiao
+ */
 
 public enum Sentiment {
     POSITIVE,

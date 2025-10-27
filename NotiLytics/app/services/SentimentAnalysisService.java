@@ -7,6 +7,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
+/*
+ * SentimentAnalysisService.java
+ *
+ * Provides sentiment analysis utilities for news articles and word lists.
+ * Supports multilingual positive and negative word detection, and calculates sentiment using the Sentiment enum.
+ *
+ * Author: Ruochen Qiao
+ */
 
 @Singleton
 public class SentimentAnalysisService {
