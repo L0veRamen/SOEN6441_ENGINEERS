@@ -27,7 +27,13 @@ import play.mvc.Result;
 import services.ProfileService;
 import services.SearchHistoryService;
 import services.SearchService;
+import services.SourcesService;
+import models.SourceItem;
+import views.html.sources;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
@@ -42,6 +48,7 @@ public class HomeController extends Controller {
     private final SearchService searchService;
     private final SearchHistoryService historyService;
     private final ProfileService profileService;
+    private final SourcesService sourcesService;
 
     /**
      * Constructor with dependency injection.
@@ -55,10 +62,11 @@ public class HomeController extends Controller {
     @Inject
     public HomeController(SearchService searchService,
                           SearchHistoryService historyService,
-                          ProfileService profileService) {
+                          ProfileService profileService,SourcesService sourcesService) {
         this.searchService = searchService;
         this.historyService = historyService;
         this.profileService = profileService;
+        this.sourcesService = sourcesService;
     }
 
     /**
@@ -163,6 +171,33 @@ public class HomeController extends Controller {
             return ok(views.html.profile.render(res.source(), res.articles()));
         });
     }
+    /**
+     * Displays the News Sources page.
+     * Filters sources by country, category, and language if provided.
+     * Calls the SourcesService asynchronously and renders the result page.
+     *
+     * @param request  current HTTP request
+     * @param country  country filter (e.g., "us")
+     * @param category category filter (e.g., "business")
+     * @param language language filter (e.g., "en")
+     * @return async HTTP result with the sources page
+     * @author Yang Zhang
+     */
+    public CompletionStage<Result> sources(Http.Request request,
+                                           String country,
+                                           String category,
+                                           String language) {
+        Optional<String> oc   = Optional.ofNullable(country).map(String::toLowerCase).filter(s -> !s.isBlank());
+        Optional<String> ocat = Optional.ofNullable(category).map(String::toLowerCase).filter(s -> !s.isBlank());
+        Optional<String> olang = Optional.ofNullable(language).map(String::toLowerCase).filter(s -> !s.isBlank());
+
+        return sourcesService.listSources(oc, ocat, olang)
+                .thenApply(list -> ok(sources.render(list,
+                        country == null ? "" : country,
+                        category == null ? "" : category,
+                        language == null ? "" : language)));
+    }
+
 
     /**
      * Extract or create session ID from Play session.
