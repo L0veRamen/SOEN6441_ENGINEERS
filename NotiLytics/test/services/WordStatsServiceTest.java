@@ -304,6 +304,195 @@ public class WordStatsServiceTest {
     }
     
     /**
+     * Test that computeWordStats filters out descriptions with only punctuation.
+     * Verifies that non-alphabetic characters are ignored.
+     * 
+     * @throws Exception if test execution fails
+     * @author Zi Lun Li
+     */
+    @Test
+    public void computeWordStatsIgnoresPunctuationTest() throws Exception {
+        String json = """
+                {
+                  "status": "ok",
+                  "totalResults": 1,
+                  "articles": [
+                    {
+                      "source": {"id": "test", "name": "Test"},
+                      "title": "Test",
+                      "description": "! @ # $ % & * ( ) - = _ + test ",
+                      "url": "https://test.com",
+                      "publishedAt": "2024-01-01T00:00:00Z"
+                    }
+                  ]
+                }
+                """;
+        JsonNode jsonNode = mapper.readTree(json);
+        when(wsResponse.getStatus()).thenReturn(200);
+        when(wsResponse.asJson()).thenReturn(jsonNode);
+
+        WordStats stats = wordStatsService.computeWordStats("test")
+                .toCompletableFuture()
+                .get();
+
+        assertEquals(1, stats.uniqueWords());
+        assertTrue(stats.wordFrequencies().stream()
+                .anyMatch(wf -> wf.word().equals("test")));
+    }
+
+    /**
+     * Test that computeWordStats handles single character words correctly.
+     * Verifies that words with less than 2 characters are filtered out.
+     * 
+     * @throws Exception if test execution fails
+     * @author Zi Lun Li
+     */
+    @Test
+    public void computeWordStatsFiltersSingleCharactersTest() throws Exception {
+        String json = """
+                {
+                  "status": "ok",
+                  "totalResults": 1,
+                  "articles": [
+                    {
+                      "source": {"id": "test", "name": "Test"},
+                      "title": "Test",
+                      "description": "q w e r t y u i o p a s d f g h j k l z x c v b n m test",
+                      "url": "https://test.com",
+                      "publishedAt": "2024-01-01T00:00:00Z"
+                    }
+                  ]
+                }
+                """;
+        JsonNode jsonNode = mapper.readTree(json);
+        when(wsResponse.getStatus()).thenReturn(200);
+        when(wsResponse.asJson()).thenReturn(jsonNode);
+
+        WordStats stats = wordStatsService.computeWordStats("test")
+                .toCompletableFuture()
+                .get();
+
+        assertEquals(1, stats.uniqueWords());
+        assertEquals(1, stats.totalWords());
+        
+        assertFalse(stats.wordFrequencies().stream()
+                .anyMatch(wf -> wf.word().length() == 1));
+    }
+
+    /**
+     * Test that computeWordStats processes all articles regardless of null, empty and valid descriptions.
+     * Verifies that processing continues when some descriptions are null or empty.
+     * 
+     * @throws Exception if test execution fails
+     * @author Zi Lun Li
+     */
+    @Test
+    public void computeWordStatsProcessingAllArticlesTest() throws Exception {
+        String json = """
+                {
+                  "status": "ok",
+                  "totalResults": 3,
+                  "articles": [
+                    {
+                      "source": {"id": "test", "name": "Test"},
+                      "title": "Test 1",
+                      "description": null,
+                      "url": "https://test.com/1",
+                      "publishedAt": "2024-01-01T00:00:00Z"
+                    },
+                    {
+                      "source": {"id": "test", "name": "Test"},
+                      "title": "Test 2",
+                      "description": "test",
+                      "url": "https://test.com/2",
+                      "publishedAt": "2024-01-01T01:00:00Z"
+                    },
+                    {
+                      "source": {"id": "test", "name": "Test"},
+                      "title": "Test 3",
+                      "description": "",
+                      "url": "https://test.com/3",
+                      "publishedAt": "2024-01-01T02:00:00Z"
+                    },
+                    {
+                      "source": {"id": "test", "name": "Test"},
+                      "title": "Test 4",
+                      "description": " ",
+                      "url": "https://test.com/4",
+                      "publishedAt": "2024-01-01T02:00:00Z"
+                    }
+                  ]
+                }
+                """;
+        JsonNode jsonNode = mapper.readTree(json);
+        when(wsResponse.getStatus()).thenReturn(200);
+        when(wsResponse.asJson()).thenReturn(jsonNode);
+
+        WordStats stats = wordStatsService.computeWordStats("test")
+                .toCompletableFuture()
+                .get();
+
+        // Should process only the valid description from article 2
+        assertEquals(4, stats.totalArticles());
+        assertEquals(1, stats.uniqueWords());
+        assertEquals(1, stats.totalWords());
+    }
+
+    /**
+     * Test word frequency with multiple occurrences across descriptions.
+     * Verifies correct aggregation of word counts.
+     * 
+     * @throws Exception if test execution fails
+     * @author Zi Lun Li
+     */
+    @Test
+    public void computeWordStatsAggregatesAcrossArticles() throws Exception {
+        String json = """
+                {
+                  "status": "ok",
+                  "totalResults": 3,
+                  "articles": [
+                    {
+                      "source": {"id": "test", "name": "Test"},
+                      "title": "Test 1",
+                      "description": "test apple",
+                      "url": "https://test.com/1",
+                      "publishedAt": "2024-01-01T00:00:00Z"
+                    },
+                    {
+                      "source": {"id": "test", "name": "Test"},
+                      "title": "Test 2",
+                      "description": "test banana",
+                      "url": "https://test.com/2",
+                      "publishedAt": "2024-01-01T01:00:00Z"
+                    },
+                    {
+                      "source": {"id": "test", "name": "Test"},
+                      "title": "Test 3",
+                      "description": "test orange",
+                      "url": "https://test.com/3",
+                      "publishedAt": "2024-01-01T02:00:00Z"
+                    }
+                  ]
+                }
+                """;
+        JsonNode jsonNode = mapper.readTree(json);
+        when(wsResponse.getStatus()).thenReturn(200);
+        when(wsResponse.asJson()).thenReturn(jsonNode);
+
+        WordStats stats = wordStatsService.computeWordStats("test")
+                .toCompletableFuture()
+                .get();
+
+        WordStats.WordFrequency top = stats.wordFrequencies().get(0);
+        assertEquals("test", top.word());
+        assertEquals(3, top.count());
+      
+        assertEquals(4, stats.uniqueWords());
+        assertEquals(6, stats.totalWords());
+    }
+    
+    /**
      * Test error handling when API call fails.
      * Verifies that service returns empty statistics on exception.
      * 
@@ -313,10 +502,34 @@ public class WordStatsServiceTest {
     @Test
     public void computeStatsErrorTest() throws Exception {
         CompletableFuture<WSResponse> failed = new CompletableFuture<>();
-        failed.completeExceptionally(new RuntimeException("Error"));
+        failed.completeExceptionally(new RuntimeException("API Error"));
         when(wsRequest.get()).thenReturn(failed);
 
         // This should NOT throw because service handles it
+        WordStats stats = wordStatsService.computeWordStats("test")
+                .toCompletableFuture()
+                .get();
+
+        assertEquals("test", stats.query());
+        assertEquals(0, stats.totalArticles());
+        assertEquals(0, stats.uniqueWords());
+        assertEquals(0, stats.totalWords());
+        assertTrue(stats.wordFrequencies().isEmpty());
+    }
+    
+    /**
+     * Test error handling during word extraction.
+     * Verifies graceful handling when word extraction fails.
+     * 
+     * @throws Exception if test execution fails
+     * @author Zi Lun Li
+     */
+    @Test
+    public void computeWordStatsHandlesExtractionErrorTest() throws Exception {
+        when(wsResponse.getStatus()).thenReturn(200);
+        // Make wsResponse.asJson() throw exception
+        when(wsResponse.asJson()).thenThrow(new RuntimeException("Extraction error"));
+
         WordStats stats = wordStatsService.computeWordStats("test")
                 .toCompletableFuture()
                 .get();
