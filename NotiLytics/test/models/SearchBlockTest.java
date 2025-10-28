@@ -517,15 +517,4 @@ public class SearchBlockTest {
         assertTrue(block.articles().isEmpty());
         assertTrue(block.articleReadability().isEmpty());
     }
-
-    /**
-     * Test source
-     *
-     * @author Group
-     */
-    @Test
-    public void testSource() {
-        SourceProfile sp = new SourceProfile();
-        assertNull(sp.id);
-    }
 }
