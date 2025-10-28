@@ -279,3 +279,14 @@ button:hover {
 .article-readability strong {
     color: #333;
 }
+
+/*
+go to sources
+ */
+.header-actions{display:flex;justify-content:center;margin-top:12px}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:#3498db;color:#fff;text-decoration:none;padding:10px 18px;border-radius:12px;font-weight:700;letter-spacing:.2px;box-shadow:0 6px 16px rgba(52,152,219,.25);transition:transform .15s ease,box-shadow .15s ease,background-color .15s ease}
+.btn-primary:hover{background:#2f89c8;box-shadow:0 8px 20px rgba(52,152,219,.35);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0);box-shadow:0 4px 10px rgba(52,152,219,.25)}
+.btn-primary:focus{outline:none;box-shadow:0 0 0 3px rgba(255,255,255,.35),0 0 0 6px rgba(52,152,219,.55)}
+.btn-with-icon .icon{font-size:1.05em;line-height:1;display:inline-flex}
+@media (max-width:640px){.btn-primary{width:100%;justify-content:center}}

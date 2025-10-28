@@ -1,0 +1,79 @@
+@(items: java.util.List[models.SourceItem],
+        country: String,
+        category: String,
+        language: String)
+
+@import scala.jdk.CollectionConverters._
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>News Sources</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/sources.css")">
+    </head>
+    <body>
+        <div class="container">
+            <div class="toolbar">
+                <h2 class="title">News Sources</h2>
+                <a href="@routes.HomeController.index()" class="btn">← Back to Home</a>
+            </div>
+
+            <div class="panel">
+                <form method="get" action="@routes.HomeController.sources()">
+                    <div class="row">
+                        <input class="input" type="text" name="country" value="@country" maxlength="2" placeholder="country: us">
+                        <input class="input" type="text" name="category" value="@category" placeholder="category: technology">
+                        <input class="input" type="text" name="language" value="@language" maxlength="2" placeholder="language: en">
+                        <button type="submit" class="btn">Filter</button>
+                        <a href="@routes.HomeController.sources()" class="btn secondary">Reset</a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="kpis">
+                Found @items.size sources
+                @if(country != null && !country.trim.isEmpty){ <span class="badge">country: @country</span>}
+                @if(category != null && !category.trim.isEmpty){ <span class="badge">category: @category</span>}
+                @if(language != null && !language.trim.isEmpty){ <span class="badge">language: @language</span>}
+            </div>
+
+            <div class="tblwrap">
+                <table class="tbl">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Language</th>
+                            <th>Country</th>
+                            <th>Website</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @for(it <- items.asScala) {
+                        <tr>
+                            <td class="name">
+                                @if(it.id != null) {
+                                    <a href='@routes.HomeController.source(it.id)'>@it.name</a>
+                                } else { @it.name }
+                                @if(it.description != null && it.description.trim.nonEmpty){
+                                    <div class="desc">@it.description</div>
+                                }
+                            </td>
+                            <td>@Option(it.category).getOrElse("-")</td>
+                            <td>@Option(it.language).getOrElse("-")</td>
+                            <td>@Option(it.country).getOrElse("-")</td>
+                            <td>
+                            @if(it.url != null) {
+                                <a href="@it.url" target="_blank" rel="noreferrer" class="name">open</a>
+                            } else { - }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </body>
+</html>
