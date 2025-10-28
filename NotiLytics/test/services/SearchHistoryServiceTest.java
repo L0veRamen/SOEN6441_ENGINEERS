@@ -13,10 +13,19 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
+/**
+ * Unit tests for search history service
+ *
+ * @author Group
+ */
 public class SearchHistoryServiceTest {
 
     private SearchHistoryService service;
-
+    /**
+     * Set up test service instance
+     *
+     * @author Group
+     */
     @Before
     public void setUp() {
         Config config = ConfigFactory.parseString("""
@@ -26,6 +35,22 @@ public class SearchHistoryServiceTest {
         service = new SearchHistoryService(config);
     }
 
+    /**
+     * Test default
+     *
+     * @author Group
+     */
+    @Test
+    public void testDefault() {
+        Config def = ConfigFactory.parseString("");
+        new SearchHistoryService(def);
+    }
+
+    /**
+     * Set up block
+     *
+     * @author Group
+     */
     private SearchBlock block(String suffix) {
         return new SearchBlock(
                 "query-" + suffix,
@@ -45,6 +70,11 @@ public class SearchHistoryServiceTest {
         );
     }
 
+    /**
+     * Test order
+     *
+     * @author Group
+     */
     @Test
     public void pushAddsEntriesAndMaintainsOrder() {
         service.push("session", block("first"));
@@ -56,6 +86,12 @@ public class SearchHistoryServiceTest {
         assertEquals("query-first", history.get(1).query());
     }
 
+
+    /**
+     * Test entries
+     *
+     * @author Group
+     */
     @Test
     public void pushLimitsToTenEntries() {
         for (int i = 0; i < 12; i++) {
@@ -68,6 +104,12 @@ public class SearchHistoryServiceTest {
         assertEquals("query-2", history.get(9).query());
     }
 
+
+    /**
+     * Test inputs
+     *
+     * @author Group
+     */
     @Test
     public void pushValidatesInputs() {
         service.push(null, block("x"));
@@ -77,6 +119,12 @@ public class SearchHistoryServiceTest {
         assertTrue(service.list("valid").isEmpty());
     }
 
+
+    /**
+     * Test missing session
+     *
+     * @author Group
+     */
     @Test
     public void listHandlesMissingSessionAndEmptyCache() {
         assertTrue(service.list(null).isEmpty());
@@ -88,6 +136,11 @@ public class SearchHistoryServiceTest {
         assertTrue(service.list("session").isEmpty());
     }
 
+    /**
+     * Test session count
+     *
+     * @author Group
+     */
     @Test
     public void clearAndActiveSessionCount() {
         service.push("sessionA", block("A"));

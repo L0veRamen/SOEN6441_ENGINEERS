@@ -27,10 +27,15 @@ import play.mvc.Result;
 import services.ProfileService;
 import services.SearchHistoryService;
 import services.SearchService;
+import services.WordStatsService;
+import services.SourcesService;
+import models.SourceItem;
+import views.html.sources;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -42,6 +47,8 @@ public class HomeController extends Controller {
     private final SearchService searchService;
     private final SearchHistoryService historyService;
     private final ProfileService profileService;
+    private final WordStatsService wordStatsService;
+    private final SourcesService sourcesService;
 
     /**
      * Constructor with dependency injection.
@@ -55,10 +62,14 @@ public class HomeController extends Controller {
     @Inject
     public HomeController(SearchService searchService,
                           SearchHistoryService historyService,
-                          ProfileService profileService) {
+                          ProfileService profileService,
+                          WordStatsService wordStatsService,
+                          SourcesService sourcesService) {
         this.searchService = searchService;
         this.historyService = historyService;
         this.profileService = profileService;
+        this.wordStatsService = wordStatsService;
+        this.sourcesService = sourcesService;
     }
 
     /**
@@ -77,6 +88,29 @@ public class HomeController extends Controller {
         return CompletableFuture.completedFuture(
                 ok(views.html.home.render(history, request))
         );
+    }
+
+    /**
+     * Display view for word statistics page for a search query.
+     * Validates query parameter, computes statistics, and renders view.
+     *
+  	 * Query parameter:
+     * - q (required): Search query string
+     *
+     * @param request HTTP request
+     * @param query Search query from URL parameter (q)
+     * @return Async result with rendered word statistics view or bad request
+     * @author Zi Lun Li
+     */
+    public CompletionStage<Result> wordStats(Http.Request request, String query) {
+        if (query == null || query.isBlank()) {
+            return java.util.concurrent.CompletableFuture.completedFuture(
+                badRequest("Search query is required")
+            );
+        }
+
+        return wordStatsService.computeWordStats(query)
+            .thenApply(stats -> ok(views.html.wordstats.render(stats, request)));
     }
 
     /**
@@ -162,6 +196,45 @@ public class HomeController extends Controller {
             }
             return ok(views.html.profile.render(res.source(), res.articles()));
         });
+    }
+
+    /**
+     * @Author Yang
+     * @Description
+     * Handles the /sources page request (Task C).
+     * Fetches both the available filter options (facets) and
+     * the filtered list of news sources from the News API asynchronously.
+     * Combines the two results and renders the sources.scala.html view.
+     *
+     * @Date 10:40 2025-10-28
+     * @Param request  current HTTP request
+     * @Param country  optional country filter (e.g., "us")
+     * @Param category optional category filter (e.g., "business")
+     * @Param language optional language filter (e.g., "en")
+     * @return asynchronous HTTP Result rendering the News Sources page
+     */
+
+    public CompletionStage<Result> sources(Http.Request request,
+                                           String country,
+                                           String category,
+                                           String language) {
+        Optional<String> oCountry  = Optional.ofNullable(country).map(String::toLowerCase).filter(s -> !s.isBlank());
+        Optional<String> oCategory = Optional.ofNullable(category).map(String::toLowerCase).filter(s -> !s.isBlank());
+        Optional<String> oLang     = Optional.ofNullable(language).map(String::toLowerCase).filter(s -> !s.isBlank());
+
+        CompletionStage<models.Facets> facetsStage = sourcesService.getFacets();
+        CompletionStage<java.util.List<models.SourceItem>> listStage = sourcesService.listSources(oCountry, oCategory, oLang);
+
+        return facetsStage.thenCombine(listStage, (facets, list) ->
+                ok(views.html.sources.render(
+                        list,
+                        country == null ? "" : country,
+                        category == null ? "" : category,
+                        language == null ? "" : language,
+                        facets.countries,
+                        facets.categories,
+                        facets.languages
+                )));
     }
 
     /**

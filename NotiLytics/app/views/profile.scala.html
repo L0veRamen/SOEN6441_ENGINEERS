@@ -9,10 +9,14 @@
         <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
     </head>
     <div class="container">
+        <a href="/Notilytics" class="back-link">← Back to Search</a>
         <!-- Source Profile section -->
         <div class="profile-card">
             @if(profile.description == null) {
-                <p>Profile info for @profile.name is not available from NewsApi</p>
+                <p>Profile information for "@profile.name" is not available from NewsApi</p>
+                @if(!articles.isEmpty) {
+                    <p>The following articles are found from the same source</p>
+                }
             } else {
                 <h2>@profile.name</h2>
                 <p><strong>Category:</strong> @profile.category</p>
@@ -39,7 +43,7 @@
 
                         <div class="article-meta">
                             @if(article.hasSource()) {
-                                Source: <a href="/source/@article.getSourceId()">@article.getSourceDisplayName()</a>
+                                Source: <a href="@routes.HomeController.source(article.getSourceId)">@article.getSourceDisplayName()</a>
                             }
                             @if(article.publishedAt() != null && !article.publishedAt().isEmpty()) {
                                 | Published: @article.publishedAt()

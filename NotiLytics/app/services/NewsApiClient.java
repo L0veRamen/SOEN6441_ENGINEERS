@@ -216,10 +216,10 @@ public class NewsApiClient {
         this.baseUrl = config.hasPath("newsapi.baseUrl") ?
                 config.getString("newsapi.baseUrl") : "";
 
-        if (apiKey == null || apiKey.isBlank()) {
+        if (apiKey.isBlank()) {
             throw new IllegalStateException("Missing configuration: newsapi.key");
         }
-        if (baseUrl == null || baseUrl.isBlank()) {
+        if (baseUrl.isBlank()) {
             throw new IllegalStateException("Missing configuration: newsapi.baseUrl");
         }
 
@@ -513,7 +513,7 @@ public class NewsApiClient {
                         searchCache.put(cacheKey, result);
                         return CompletableFuture.completedFuture(result);
                     } else {
-                        return searchEverythingByFilter(encodedQuery).thenApply( res -> {
+                        return searchEverythingByFilter(query).thenApply( res -> {
                             searchCache.put(cacheKey, res);
                             return res;
                         });
@@ -536,7 +536,7 @@ public class NewsApiClient {
     public CompletionStage<SearchResponse> searchEverythingByFilter(String query) {
         String url = String.format(
                 "%s/everything?q=%s&apiKey=%s",
-                baseUrl, query, apiKey
+                baseUrl, URLEncoder.encode(query, StandardCharsets.UTF_8), apiKey
         );
         return wsClient.url(url)
                 .get()

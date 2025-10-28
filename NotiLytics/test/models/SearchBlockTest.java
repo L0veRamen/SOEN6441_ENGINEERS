@@ -501,4 +501,20 @@ public class SearchBlockTest {
         assertTrue(block.articles().isEmpty());
         assertTrue(block.articleReadability().isEmpty());
     }
+
+    /**
+     * Test null fields
+     *
+     * @author Group
+     */
+    @Test
+    public void testNull() {
+        SearchBlock block = new SearchBlock(
+                "q", "relevancy", 10,
+                null, "2025-10-28",
+                null, null, null
+        );
+        assertTrue(block.articles().isEmpty());
+        assertTrue(block.articleReadability().isEmpty());
+    }
 }
