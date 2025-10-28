@@ -5,6 +5,8 @@ import models.ReadabilityScores;
 import models.SearchBlock;
 import models.SourceProfile;
 import models.Sentiment;
+import models.Facets;
+import models.SourceItem;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,8 +19,10 @@ import services.ProfileService;
 import services.ProfileService.SourceProfileResult;
 import services.SearchHistoryService;
 import services.SearchService;
+import services.SourcesService;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.*;
@@ -53,6 +57,9 @@ public class HomeControllerTest {
     @Mock
     private SearchService searchService;
 
+    @Mock
+    private SourcesService sourcesService;
+
     private HomeController controller;
     private SearchBlock sampleBlock;
 
@@ -64,7 +71,7 @@ public class HomeControllerTest {
      */
     @Before
     public void setUp() {
-        controller = new HomeController(searchService, historyService, profileService);
+        controller = new HomeController(searchService, historyService, profileService, sourcesService);
         sampleBlock = new SearchBlock(
                 "java",
                 "publishedAt",
@@ -656,5 +663,88 @@ public class HomeControllerTest {
 
         assertEquals(OK, result.status());
         verify(profileService, times(1)).search("test-source-123");
+    }
+
+    // ==================== NEWS SOURCES TESTS ====================
+
+    /**
+     *
+     *
+     *
+     * @author Yang
+     */
+    @Test
+    public void sourcesWithEmptyFiltersUsesOptionalsEmptyAndRenders() {
+        when(sourcesService.getFacets()).thenReturn(CompletableFuture.completedFuture(
+                new Facets(List.of("ca", "us"), List.of("business", "technology"), List.of("en", "fr"))
+        ));
+        when(sourcesService.listSources(eq(Optional.empty()), eq(Optional.empty()), eq(Optional.empty())))
+                .thenReturn(CompletableFuture.completedFuture(List.of(
+                        new SourceItem("id1","Name1","d","https://n1","business","en","us")
+                )));
+
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/sources")
+                .build();
+
+        Result result = controller.sources(request, "", "", "").toCompletableFuture().join();
+
+        assertEquals(OK, result.status());
+        verify(sourcesService).getFacets();
+        verify(sourcesService).listSources(eq(Optional.empty()), eq(Optional.empty()), eq(Optional.empty()));
+    }
+
+    /**
+     *
+     *
+     *
+     * @author Yang
+     */
+    @Test
+    public void sourcesWithSpecificFiltersLowercasesAndPassesOptionals() {
+        when(sourcesService.getFacets()).thenReturn(CompletableFuture.completedFuture(
+                new Facets(List.of("ca","us"), List.of("business"), List.of("en"))
+        ));
+        when(sourcesService.listSources(eq(Optional.of("us")), eq(Optional.of("business")), eq(Optional.of("en"))))
+                .thenReturn(CompletableFuture.completedFuture(List.of(
+                        new SourceItem("id2","Name2","d","https://n2","business","en","us")
+                )));
+
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/sources?country=US&category=Business&language=EN")
+                .build();
+
+        Result result = controller.sources(request, "US", "Business", "EN").toCompletableFuture().join();
+
+        assertEquals(OK, result.status());
+        verify(sourcesService).listSources(eq(Optional.of("us")), eq(Optional.of("business")), eq(Optional.of("en")));
+    }
+
+    /**
+     *
+     *
+     *
+     * @author Yang
+     */
+    @Test
+    public void sourcesRendersWhenNoResults() {
+        when(sourcesService.getFacets()).thenReturn(CompletableFuture.completedFuture(
+                new Facets(List.of("us"), List.of("business"), List.of("en"))
+        ));
+        when(sourcesService.listSources(any(), any(), any()))
+                .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/sources?country=us")
+                .build();
+
+        Result result = controller.sources(request, "us", "", "").toCompletableFuture().join();
+
+        assertEquals(OK, result.status());
+        verify(sourcesService).getFacets();
+        verify(sourcesService).listSources(eq(Optional.of("us")), eq(Optional.empty()), eq(Optional.empty()));
     }
 }
