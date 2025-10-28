@@ -26,6 +26,18 @@ import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for NewsApiClient
+ * <p>
+ * Test Strategy:
+ * - Mock all service dependencies
+ * - Test equivalence classes for input validation
+ * - Verify async behavior with CompletionStage
+ * - Ensure proper session handling
+ * - Never call live NewsAPI (use mocks only)
+ *
+ * @author Group
+ */
 @RunWith(MockitoJUnitRunner.class)
 public class NewsApiClientTest {
 
@@ -41,7 +53,12 @@ public class NewsApiClientTest {
     private ObjectMapper mapper;
     private Config config;
     private NewsApiClient client;
-
+    /**
+     * Set up test fixtures before each test
+     * Initializes client instance
+     *
+     * @author Group
+     */
     @Before
     public void setUp() {
         mapper = new ObjectMapper();
@@ -58,18 +75,33 @@ public class NewsApiClientTest {
         client = new NewsApiClient(wsClient, config);
     }
 
+    /**
+     * Test constructor
+     *
+     * @author Group
+     */
     @Test(expected = IllegalStateException.class)
     public void constructorRequiresApiKey() {
         Config badConfig = ConfigFactory.parseString("newsapi.baseUrl = \"https://newsapi.org/v2\"");
         new NewsApiClient(wsClient, badConfig);
     }
 
+    /**
+     * Test constructor
+     *
+     * @author Group
+     */
     @Test(expected = IllegalStateException.class)
     public void constructorRequiresBaseUrl() {
         Config badConfig = ConfigFactory.parseString("newsapi.key = \"abc\"");
         new NewsApiClient(wsClient, badConfig);
     }
 
+    /**
+     * Test searchEverything
+     *
+     * @author Group
+     */
     @Test
     public void searchEverythingParsesArticlesAndCachesResult() throws Exception {
         String json = """
@@ -117,6 +149,11 @@ public class NewsApiClientTest {
         verify(wsRequest, times(1)).get();
     }
 
+    /**
+     * Test searchEverything
+     *
+     * @author Group
+     */
     @Test
     public void searchEverythingEncodesQueryAndHandlesHttpError() throws Exception {
         when(wsResponse.getStatus()).thenReturn(500);
@@ -132,6 +169,11 @@ public class NewsApiClientTest {
         verify(wsRequest).get();
     }
 
+    /**
+     * Test searchEverything
+     *
+     * @author Group
+     */
     @Test
     public void searchEverythingHandlesApiErrorStatus() throws Exception {
         String json = """
@@ -153,6 +195,11 @@ public class NewsApiClientTest {
         assertEquals(0, response.totalResults());
     }
 
+    /**
+     * Test searchEverything
+     *
+     * @author Group
+     */
     @Test
     public void searchEverythingHandlesMalformedJson() throws Exception {
         when(wsResponse.getStatus()).thenReturn(200);
@@ -165,6 +212,11 @@ public class NewsApiClientTest {
         assertTrue(response.articles().isEmpty());
     }
 
+    /**
+     * Test searchEverything
+     *
+     * @author Group
+     */
     @Test
     public void searchEverythingHandlesException() throws Exception {
         CompletableFuture<WSResponse> failed = new CompletableFuture<>();
@@ -179,6 +231,11 @@ public class NewsApiClientTest {
         assertEquals(0, response.totalResults());
     }
 
+    /**
+     * Test searchEverything
+     *
+     * @author Group
+     */
     @Test
     public void searchEverythingFiltersInvalidArticlesAndAvoidsCachingEmptyResult() throws Exception {
         String json = """
@@ -233,6 +290,11 @@ public class NewsApiClientTest {
         verify(wsRequest, times(3)).get();
     }
 
+    /**
+     * Test searchEverything
+     *
+     * @author Group
+     */
     @Test
     public void searchEverythingHandlesMissingArticlesArray() throws Exception {
         String json = """
@@ -253,6 +315,11 @@ public class NewsApiClientTest {
         assertEquals(3, response.totalResults());
     }
 
+    /**
+     * Test searchEverything
+     *
+     * @author Group
+     */
     @Test
     public void searchEverythingHandlesJsonParsingException() throws Exception {
         when(wsResponse.getStatus()).thenReturn(200);
@@ -266,6 +333,11 @@ public class NewsApiClientTest {
         assertEquals(0, response.totalResults());
     }
 
+    /**
+     * Test searchEverything
+     *
+     * @author Group
+     */
     @Test
     public void searchEverythingContinuesWhenArticleParsingFails() throws Exception {
         ObjectNode root = mapper.createObjectNode();
@@ -299,6 +371,11 @@ public class NewsApiClientTest {
         assertEquals("Valid Article", response.articles().get(0).title());
     }
 
+    /**
+     * Test searchSourceProfile
+     *
+     * @author Group
+     */
     @Test
     public void searchSourceProfileWhenFound() {
         ObjectNode root = mapper.createObjectNode();
@@ -343,6 +420,11 @@ public class NewsApiClientTest {
         assertNull(third);
     }
 
+    /**
+     * Test searchSourceProfile
+     *
+     * @author Group
+     */
     @Test
     public void searchSourceProfileOnErrorStatus() {
         ObjectNode root = mapper.createObjectNode();
@@ -359,6 +441,11 @@ public class NewsApiClientTest {
         assertNull(profile);
     }
 
+    /**
+     * Test searchEverythingBySource
+     *
+     * @author Group
+     */
     @Test
     public void searchEverythingBySourceWhenFound() {
         // Arrange: API returns ok with one article
@@ -398,6 +485,11 @@ public class NewsApiClientTest {
         verifyNoInteractions(wsClient);
     }
 
+    /**
+     * Test searchEverythingBySource
+     *
+     * @author Group
+     */
     @Test
     public void searchEverythingBySourceFallsBackToFilter() {
         // Arrange: API returns ok but no articles
@@ -420,6 +512,11 @@ public class NewsApiClientTest {
         assertTrue(result.articles().isEmpty());
     }
 
+    /**
+     * Test searchEverythingByFilter
+     *
+     * @author Group
+     */
     @Test
     public void searchEverythingByFilterWhenFound() {
         // Arrange: API returns ok with one article from CNN
@@ -451,6 +548,11 @@ public class NewsApiClientTest {
         assertEquals("CNN Article", result.articles().get(0).title());
     }
 
+    /**
+     * Test searchEverythingByFilter
+     *
+     * @author Group
+     */
     @Test
     public void searchEverythingByFilterOnErrorStatus() {
         // Arrange: API returns error

@@ -13,7 +13,11 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-
+/**
+ * Unit tests for profile service
+ *
+ * @author Yuhao Ma
+ */
 @RunWith(MockitoJUnitRunner.class)
 public class ProfileServiceTest {
 
@@ -21,12 +25,21 @@ public class ProfileServiceTest {
     private NewsApiClient newsApiClient;
 
     private ProfileService service;
-
+    /**
+     * Set up test service instance
+     *
+     * @author Yuhao Ma
+     */
     @Before
     public void setUp() {
         service = new ProfileService(newsApiClient);
     }
 
+    /**
+     * Test source returned from service
+     *
+     * @author Yuhao Ma
+     */
     @Test
     public void profileTest() throws Exception {
         NewsApiClient.SearchResponse response = new NewsApiClient.SearchResponse(

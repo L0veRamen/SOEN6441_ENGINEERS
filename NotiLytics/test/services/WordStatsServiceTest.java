@@ -86,16 +86,21 @@ public class WordStatsServiceTest {
                   "articles": [
                     {
                       "source": {"id": "test", "name": "Test Source"},
+                      "author": "Author 1",
                       "title": "Test 1",
-                      "description": "this is a test, testing the test",
+                      "description": "this is a test, testing a test",
                       "url": "https://test.com/1",
+                      "content": "Test123",
                       "publishedAt": "2024-01-01T00:00:00Z"
+                      
                     },
                     {
                       "source": {"id": "test", "name": "Test Source"},
+                      "author": null,
                       "title": "Test 2",
-                      "description": "this is not a test, testing the test",
+                      "description": "this is not a test, testing another test",
                       "url": "https://test.com/2",
+                      "content": null,
                       "publishedAt": "2024-01-01T01:00:00Z"
                     }
                   ]

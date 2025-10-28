@@ -9,7 +9,6 @@ GET   /               controllers.HomeController.index(request: play.mvc.Http.Re
 GET   /Notilytics     controllers.HomeController.index(request: play.mvc.Http.Request)
 
 # ===== Search (reads q & sortBy from query string) =====
-# Now handled by HomeController instead of SearchController
 GET   /notilytics     controllers.HomeController.search(request: play.mvc.Http.Request)
 
 

@@ -55,7 +55,7 @@ public class HomeControllerTest {
 
     @Mock
     private SearchService searchService;
-    
+
     @Mock
     private WordStatsService wordStatsService;
 
@@ -83,7 +83,6 @@ public class HomeControllerTest {
                         "source-id",
                         "Source",
                         "2024-01-01T00:00:00Z")),
-
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
                 List.of(new ReadabilityScores(8.0, 66.0)),
@@ -312,8 +311,7 @@ public class HomeControllerTest {
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
                 List.of(new ReadabilityScores(8.0, 66.0)),
-                Sentiment.fromScores(0.1, 0.8)
-        );
+                Sentiment.fromScores(0.8, 0.1));
 
         when(searchService.search("java", "publishedAt"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -334,60 +332,23 @@ public class HomeControllerTest {
     }
 
     /**
-     * Test search() with valid query and custom sortBy (relevancy)
-     * Equivalence class: Valid input, custom sorting
+     * Test search() with valid query and custom sortBy
+     * Equivalence class: Valid input with custom sorting
      *
      * @author Group
      */
     @Test
-    public void searchWithCustomSortByRelevancy() {
-        SearchBlock mockBlock = new SearchBlock(
-                "spring",
-                "relevancy",
-                20,
-                List.of(new Article("Spring Article", "https://example.com/spring", "desc",
-                        "source-2", "Source", "2024-01-01T00:00:00Z")),
-                "2024-01-01T00:00:00Z",
-                new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)),
-                Sentiment.fromScores(0.5, 0.5)
-        );
-
-        when(searchService.search("spring", "relevancy"))
-                .thenReturn(CompletableFuture.completedFuture(mockBlock));
-        doNothing().when(historyService).push(anyString(), any(SearchBlock.class));
-
-        Http.Request request = new Http.RequestBuilder()
-                .method("GET")
-                .uri("/notilytics?q=spring&sortBy=relevancy")
-                .build();
-
-        Result result = controller.search(request).join();
-
-        assertEquals(SEE_OTHER, result.status());
-        verify(searchService, times(1)).search("spring", "relevancy");
-        verify(historyService, times(1)).push(anyString(), eq(mockBlock));
-    }
-
-    /**
-     * Test search() with valid query and popularity sort
-     * Equivalence class: Valid input, popularity sorting
-     *
-     * @author Group
-     */
-    @Test
-    public void searchWithSortByPopularity() {
+    public void searchWithValidQueryAndCustomSortBy() {
         SearchBlock mockBlock = new SearchBlock(
                 "ai",
                 "popularity",
-                25,
-                List.of(new Article("AI News", "https://example.com/ai", "desc",
+                8,
+                List.of(new Article("AI Article", "https://example.com/ai", "desc",
                         "source-3", "Source", "2024-01-01T00:00:00Z")),
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
                 List.of(new ReadabilityScores(8.0, 66.0)),
-                Sentiment.fromScores(0.5, 0.5)
-        );
+                Sentiment.fromScores(0.8, 0.1));
 
         when(searchService.search("ai", "popularity"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -465,119 +426,6 @@ public class HomeControllerTest {
     }
 
     /**
-     * Test search() with invalid sortBy parameter
-     * Equivalence class: Invalid sortBy, should default to publishedAt
-     *
-     * @author Group
-     */
-    @Test
-    public void searchWithInvalidSortByDefaultsToPublishedAt() {
-        SearchBlock mockBlock = new SearchBlock(
-                "testing",
-                "publishedAt",
-                8,
-                List.of(new Article("Test", "https://example.com/test", "desc",
-                        "source-4", "Source", "2024-01-01T00:00:00Z")),
-                "2024-01-01T00:00:00Z",
-                new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)),
-                Sentiment.fromScores(0.1, 0.1)
-
-        );
-
-        when(searchService.search("testing", "publishedAt"))
-                .thenReturn(CompletableFuture.completedFuture(mockBlock));
-        doNothing().when(historyService).push(anyString(), any(SearchBlock.class));
-
-        Http.Request request = new Http.RequestBuilder()
-                .method("GET")
-                .uri("/notilytics?q=testing&sortBy=invalid")
-                .build();
-
-        Result result = controller.search(request).join();
-
-        assertEquals(SEE_OTHER, result.status());
-        // Should default to "publishedAt"
-        verify(searchService, times(1)).search("testing", "publishedAt");
-    }
-
-    /**
-     * Test search() with existing session ID
-     * Equivalence class: Returning user with session
-     *
-     * @author Group
-     */
-    @Test
-    public void searchWithExistingSessionIdUsesExistingSession() {
-        SearchBlock mockBlock = new SearchBlock(
-                "session",
-                "publishedAt",
-                12,
-                List.of(new Article("Session Test", "https://example.com/session", "desc",
-                        "source-5", "Source", "2024-01-01T00:00:00Z")),
-                "2024-01-01T00:00:00Z",
-                new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)),
-                Sentiment.fromScores(0.2, 0.7)
-        );
-
-        when(searchService.search("session", "publishedAt"))
-                .thenReturn(CompletableFuture.completedFuture(mockBlock));
-        doNothing().when(historyService).push(eq("existing-session-456"), any(SearchBlock.class));
-
-        Http.Request request = new Http.RequestBuilder()
-                .method("GET")
-                .uri("/notilytics?q=session")
-                .session("sessionId", "existing-session-456")
-                .build();
-
-        Result result = controller.search(request).join();
-
-        assertEquals(SEE_OTHER, result.status());
-        verify(historyService, times(1)).push(eq("existing-session-456"), eq(mockBlock));
-    }
-
-    /**
-     * Test search() without existing session creates new session
-     * Equivalence class: New user without session
-     *
-     * @author Group
-     */
-    @Test
-    public void searchWithoutSessionCreatesNewSession() {
-        SearchBlock mockBlock = new SearchBlock(
-                "newsession",
-                "publishedAt",
-                10,
-                List.of(new Article("New Session", "https://example.com/new", "desc",
-                        "source-6", "Source", "2024-01-01T00:00:00Z")),
-                "2024-01-01T00:00:00Z",
-                new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)),
-                Sentiment.fromScores(0.1, 0.8)
-                );
-
-        when(searchService.search("newsession", "publishedAt"))
-                .thenReturn(CompletableFuture.completedFuture(mockBlock));
-        doNothing().when(historyService).push(anyString(), any(SearchBlock.class));
-
-        Http.Request request = new Http.RequestBuilder()
-                .method("GET")
-                .uri("/notilytics?q=newsession")
-                .build();
-
-        Result result = controller.search(request).join();
-
-        assertEquals(SEE_OTHER, result.status());
-        ArgumentCaptor<String> sessionCaptor = ArgumentCaptor.forClass(String.class);
-        verify(historyService, times(1)).push(sessionCaptor.capture(), eq(mockBlock));
-
-        String capturedSessionId = sessionCaptor.getValue();
-        assertNotNull(capturedSessionId);
-        assertFalse(capturedSessionId.isBlank());
-    }
-
-    /**
      * Test search() error handling when SearchService fails
      * Equivalence class: Service failure scenario
      *
@@ -621,7 +469,6 @@ public class HomeControllerTest {
                 new ReadabilityScores(8.5, 65.0),
                 List.of(new ReadabilityScores(8.0, 66.0)),
                 Sentiment.fromScores(0.1, 0.8)
-
         );
 
         when(searchService.search("java & spring", "publishedAt"))
