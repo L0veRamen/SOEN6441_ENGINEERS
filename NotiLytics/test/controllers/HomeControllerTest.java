@@ -6,6 +6,8 @@ import models.SearchBlock;
 import models.SourceProfile;
 import models.WordStats;
 import models.Sentiment;
+import models.Facets;
+import models.SourceItem;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.jupiter.api.Nested;
@@ -20,8 +22,10 @@ import services.ProfileService.SourceProfileResult;
 import services.SearchHistoryService;
 import services.SearchService;
 import services.WordStatsService;
+import services.SourcesService;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.*;
@@ -59,6 +63,9 @@ public class HomeControllerTest {
     @Mock
     private WordStatsService wordStatsService;
 
+    @Mock
+    private SourcesService sourcesService;
+
     private HomeController controller;
     private SearchBlock sampleBlock;
     private WordStats sampleWordStats;
@@ -71,7 +78,7 @@ public class HomeControllerTest {
      */
     @Before
     public void setUp() {
-        controller = new HomeController(searchService, historyService, profileService, wordStatsService);
+        controller = new HomeController(searchService, historyService, profileService, wordStatsService, sourcesService);
         sampleBlock = new SearchBlock(
                 "java",
                 "publishedAt",
@@ -87,7 +94,7 @@ public class HomeControllerTest {
                 new ReadabilityScores(8.5, 65.0),
                 List.of(new ReadabilityScores(8.0, 66.0)),
                 Sentiment.fromScores(0.8, 0.1));
-        
+
         sampleWordStats = new WordStats(
                 "test", 10, 100, 20,
                 List.of(
@@ -95,15 +102,15 @@ public class HomeControllerTest {
                         new WordStats.WordFrequency("is", 7),
                         new WordStats.WordFrequency("a", 5)
                 )
-        );         
+        );
     }
-    
+
     /**
      * WordStatsTests Section
-     * 
+     *
      * Test that word stats endpoint accepts valid query.
      * Verifies that controller processes valid query and returns OK status.
-     * 
+     *
      * @throws Exception if test execution fails
      * @author Zi Lun Li
      */
@@ -124,11 +131,11 @@ public class HomeControllerTest {
         assertEquals(OK, result.status());
         verify(wordStatsService).computeWordStats("test");
     }
-	
+
 	/**
      * Test that word stats endpoint rejects invalid queries.
      * Verifies that controller returns BAD_REQUEST for null, empty, and whitespace queries.
-     * 
+     *
      * @throws Exception if test execution fails
      * @author Zi Lun Li
      */
@@ -138,12 +145,12 @@ public class HomeControllerTest {
                 .method("GET")
                 .uri("/wordstats")
                 .build();
-		
+
 		Http.Request emptyQueryRequest = new Http.RequestBuilder()
                 .method("GET")
                 .uri("/wordstats?q=")
                 .build();
-		
+
 		Http.Request whiteSpaceQueryRequest = new Http.RequestBuilder()
                 .method("GET")
                 .uri("/wordstats?q=%20")
@@ -152,11 +159,11 @@ public class HomeControllerTest {
         Result noQueryresult = controller.wordStats(noQueryRequest, null)
                 .toCompletableFuture()
                 .get();
-        
+
         Result emptyQueryresult = controller.wordStats(emptyQueryRequest, "")
                 .toCompletableFuture()
                 .get();
-        
+
         Result whiteSpaceQueryresult = controller.wordStats(whiteSpaceQueryRequest, " ")
                 .toCompletableFuture()
                 .get();
@@ -166,11 +173,11 @@ public class HomeControllerTest {
         assertEquals(BAD_REQUEST, whiteSpaceQueryresult.status());
         verifyNoInteractions(wordStatsService);
     }
-	
+
 	/**
      * Test that word stats handles empty results gracefully.
      * Verifies that controller returns OK status even when no word statistics are found.
-     * 
+     *
      * @throws Exception if test execution fails
      * @author Zi Lun Li
      */
@@ -192,11 +199,11 @@ public class HomeControllerTest {
         assertEquals(OK, result.status());
         verify(wordStatsService).computeWordStats("qwertyuiop");
     }
-	
+
 	/**
      * Test that word stats handles service errors properly.
      * Verifies that controller propagates exceptions from the word stats service.
-     * 
+     *
      * @throws Exception if test execution fails
      * @author Zi Lun Li
      */
@@ -426,6 +433,119 @@ public class HomeControllerTest {
     }
 
     /**
+     * Test search() with invalid sortBy parameter
+     * Equivalence class: Invalid sortBy, should default to publishedAt
+     *
+     * @author Group
+     */
+    @Test
+    public void searchWithInvalidSortByDefaultsToPublishedAt() {
+        SearchBlock mockBlock = new SearchBlock(
+                "testing",
+                "publishedAt",
+                8,
+                List.of(new Article("Test", "https://example.com/test", "desc",
+                        "source-4", "Source", "2024-01-01T00:00:00Z")),
+                "2024-01-01T00:00:00Z",
+                new ReadabilityScores(8.5, 65.0),
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.1, 0.1)
+
+        );
+
+        when(searchService.search("testing", "publishedAt"))
+                .thenReturn(CompletableFuture.completedFuture(mockBlock));
+        doNothing().when(historyService).push(anyString(), any(SearchBlock.class));
+
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/notilytics?q=testing&sortBy=invalid")
+                .build();
+
+        Result result = controller.search(request).join();
+
+        assertEquals(SEE_OTHER, result.status());
+        // Should default to "publishedAt"
+        verify(searchService, times(1)).search("testing", "publishedAt");
+    }
+
+    /**
+     * Test search() with existing session ID
+     * Equivalence class: Returning user with session
+     *
+     * @author Group
+     */
+    @Test
+    public void searchWithExistingSessionIdUsesExistingSession() {
+        SearchBlock mockBlock = new SearchBlock(
+                "session",
+                "publishedAt",
+                12,
+                List.of(new Article("Session Test", "https://example.com/session", "desc",
+                        "source-5", "Source", "2024-01-01T00:00:00Z")),
+                "2024-01-01T00:00:00Z",
+                new ReadabilityScores(8.5, 65.0),
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.2, 0.7)
+        );
+
+        when(searchService.search("session", "publishedAt"))
+                .thenReturn(CompletableFuture.completedFuture(mockBlock));
+        doNothing().when(historyService).push(eq("existing-session-456"), any(SearchBlock.class));
+
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/notilytics?q=session")
+                .session("sessionId", "existing-session-456")
+                .build();
+
+        Result result = controller.search(request).join();
+
+        assertEquals(SEE_OTHER, result.status());
+        verify(historyService, times(1)).push(eq("existing-session-456"), eq(mockBlock));
+    }
+
+    /**
+     * Test search() without existing session creates new session
+     * Equivalence class: New user without session
+     *
+     * @author Group
+     */
+    @Test
+    public void searchWithoutSessionCreatesNewSession() {
+        SearchBlock mockBlock = new SearchBlock(
+                "newsession",
+                "publishedAt",
+                10,
+                List.of(new Article("New Session", "https://example.com/new", "desc",
+                        "source-6", "Source", "2024-01-01T00:00:00Z")),
+                "2024-01-01T00:00:00Z",
+                new ReadabilityScores(8.5, 65.0),
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.1, 0.8)
+                );
+
+        when(searchService.search("newsession", "publishedAt"))
+                .thenReturn(CompletableFuture.completedFuture(mockBlock));
+        doNothing().when(historyService).push(anyString(), any(SearchBlock.class));
+
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/notilytics?q=newsession")
+                .build();
+
+        Result result = controller.search(request).join();
+
+        assertEquals(SEE_OTHER, result.status());
+        ArgumentCaptor<String> sessionCaptor = ArgumentCaptor.forClass(String.class);
+        verify(historyService, times(1)).push(sessionCaptor.capture(), eq(mockBlock));
+
+        String capturedSessionId = sessionCaptor.getValue();
+        assertNotNull(capturedSessionId);
+        assertFalse(capturedSessionId.isBlank());
+    }
+
+    /**
      * Test search() error handling when SearchService fails
      * Equivalence class: Service failure scenario
      *
@@ -469,6 +589,7 @@ public class HomeControllerTest {
                 new ReadabilityScores(8.5, 65.0),
                 List.of(new ReadabilityScores(8.0, 66.0)),
                 Sentiment.fromScores(0.1, 0.8)
+
         );
 
         when(searchService.search("java & spring", "publishedAt"))
@@ -639,5 +760,92 @@ public class HomeControllerTest {
 
         assertEquals(OK, result.status());
         verify(profileService, times(1)).search("test-source-123");
+    }
+
+// ==================== NEWS SOURCES TESTS ====================
+
+    /**
+     * Verifies that when all filters (country, category, language) are empty,
+     * the controller correctly passes Optional.empty() for each parameter,
+     * fetches facets, and renders successfully with status 200 (OK).
+     *
+     * @author Yang
+     */
+    @Test
+    public void sourcesWithEmptyFiltersUsesOptionalsEmptyAndRenders() {
+        when(sourcesService.getFacets()).thenReturn(CompletableFuture.completedFuture(
+                new Facets(List.of("ca", "us"), List.of("business", "technology"), List.of("en", "fr"))
+        ));
+        when(sourcesService.listSources(eq(Optional.empty()), eq(Optional.empty()), eq(Optional.empty())))
+                .thenReturn(CompletableFuture.completedFuture(List.of(
+                        new SourceItem("id1","Name1","d","https://n1","business","en","us")
+                )));
+
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/sources")
+                .build();
+
+        Result result = controller.sources(request, "", "", "").toCompletableFuture().join();
+
+        assertEquals(OK, result.status());
+        verify(sourcesService).getFacets();
+        verify(sourcesService).listSources(eq(Optional.empty()), eq(Optional.empty()), eq(Optional.empty()));
+    }
+
+    /**
+     * Tests that when filters are provided in mixed case (e.g., "US", "Business", "EN"),
+     * the controller lowercases all parameters and wraps them in Optionals before
+     * passing them to the service layer. Verifies that the correct Optionals are used.
+     *
+     * @author Yang
+     */
+    @Test
+    public void sourcesWithSpecificFiltersLowercasesAndPassesOptionals() {
+        when(sourcesService.getFacets()).thenReturn(CompletableFuture.completedFuture(
+                new Facets(List.of("ca","us"), List.of("business"), List.of("en"))
+        ));
+        when(sourcesService.listSources(eq(Optional.of("us")), eq(Optional.of("business")), eq(Optional.of("en"))))
+                .thenReturn(CompletableFuture.completedFuture(List.of(
+                        new SourceItem("id2","Name2","d","https://n2","business","en","us")
+                )));
+
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/sources?country=US&category=Business&language=EN")
+                .build();
+
+        Result result = controller.sources(request, "US", "Business", "EN").toCompletableFuture().join();
+
+        assertEquals(OK, result.status());
+        verify(sourcesService).listSources(eq(Optional.of("us")), eq(Optional.of("business")), eq(Optional.of("en")));
+    }
+
+    /**
+     * Ensures that when the service returns an empty source list,
+     * the controller still renders the page (status 200 OK),
+     * correctly fetching facets and passing Optionals
+     * for the given filters (only country provided in this case).
+     *
+     * @author Yang
+     */
+    @Test
+    public void sourcesRendersWhenNoResults() {
+        when(sourcesService.getFacets()).thenReturn(CompletableFuture.completedFuture(
+                new Facets(List.of("us"), List.of("business"), List.of("en"))
+        ));
+        when(sourcesService.listSources(any(), any(), any()))
+                .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/sources?country=us")
+                .build();
+
+        Result result = controller.sources(request, "us", "", "").toCompletableFuture().join();
+
+        assertEquals(OK, result.status());
+        verify(sourcesService).getFacets();
+        verify(sourcesService).listSources(eq(Optional.of("us")), eq(Optional.empty()), eq(Optional.empty()));
     }
 }

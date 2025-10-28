@@ -22,7 +22,7 @@ GET     /wordstats                   controllers.HomeController.wordStats(reques
 
 # Individual C: News Sources
 # TODO: Implement NewsSourcesController or add to HomeController
-# GET     /sources                     controllers.HomeController.sources(request: play.mvc.Http.Request, country: String ?= "", category: String ?= "", language: String ?= "")
+GET     /sources                     controllers.HomeController.sources(request: play.mvc.Http.Request, country: String ?= "", category: String ?= "", language: String ?= "")
 
 # Individual D: Sentiment Analysis
 # Integrated into SearchBlock - no separate route needed
