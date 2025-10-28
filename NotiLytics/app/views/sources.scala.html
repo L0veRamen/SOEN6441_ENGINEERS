@@ -1,7 +1,10 @@
 @(items: java.util.List[models.SourceItem],
         country: String,
         category: String,
-        language: String)
+        language: String,
+        countries: java.util.List[String],
+        categories: java.util.List[String],
+        languages: java.util.List[String])
 
 @import scala.jdk.CollectionConverters._
 
@@ -11,7 +14,7 @@
         <meta charset="utf-8">
         <title>News Sources</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/sources.css")">
+        <link rel="stylesheet" media="screen" href='@routes.Assets.versioned("stylesheets/sources.css")'>
     </head>
     <body>
         <div class="container">
@@ -23,9 +26,27 @@
             <div class="panel">
                 <form method="get" action="@routes.HomeController.sources()">
                     <div class="row">
-                        <input class="input" type="text" name="country" value="@country" maxlength="2" placeholder="country: us">
-                        <input class="input" type="text" name="category" value="@category" placeholder="category: technology">
-                        <input class="input" type="text" name="language" value="@language" maxlength="2" placeholder="language: en">
+                        <select class="input" name="country">
+                            <option value="" @if(country==null || country.isEmpty) {selected}>country: any</option>
+                            @for(c <- countries.asScala) {
+                                <option value='@c' @if(country==c){selected}>@c</option>
+                            }
+                        </select>
+
+                        <select class="input" name="category">
+                            <option value="" @if(category==null || category.isEmpty) {selected}>category: any</option>
+                            @for(ca <- categories.asScala) {
+                                <option value='@ca' @if(category==ca){selected}>@ca</option>
+                            }
+                        </select>
+
+                        <select class="input" name="language">
+                            <option value="" @if(language==null || language.isEmpty) {selected}>language: any</option>
+                            @for(l <- languages.asScala) {
+                                <option value='@l' @if(language==l){selected}>@l</option>
+                            }
+                        </select>
+
                         <button type="submit" class="btn">Filter</button>
                         <a href="@routes.HomeController.sources()" class="btn secondary">Reset</a>
                     </div>
@@ -43,11 +64,7 @@
                 <table class="tbl">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Category</th>
-                            <th>Language</th>
-                            <th>Country</th>
-                            <th>Website</th>
+                            <th>Name</th><th>Category</th><th>Language</th><th>Country</th><th>Website</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -65,9 +82,7 @@
                             <td>@Option(it.language).getOrElse("-")</td>
                             <td>@Option(it.country).getOrElse("-")</td>
                             <td>
-                            @if(it.url != null) {
-                                <a href="@it.url" target="_blank" rel="noreferrer" class="name">open</a>
-                            } else { - }
+                            @if(it.url != null) { <a href="@it.url" target="_blank" rel="noreferrer" class="name">open</a> } else { - }
                             </td>
                         </tr>
                     }

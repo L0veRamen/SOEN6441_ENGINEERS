@@ -6,18 +6,25 @@ import services.SourcesServiceImpl;
 
 /**
  * Guice module for dependency injection setup.
- * Binds interfaces to their implementations for use in the app.
+ * This class configures the bindings between interfaces and their implementations.
+ * It ensures that required services are automatically injected when needed.
  *
- * @author Yang Zhang
+ * @author group
  */
 public class AppModule extends AbstractModule {
 
-    /**
-     * Configures dependency bindings.
-     * Adds custom bindings for project services.
-     */
+    /*
+     * @Author Yang
+     * @Description
+     * Configures dependency injection bindings for the application.
+     * Binds the SourcesService interface to its implementation SourcesServiceImpl,
+     * allowing the Play Framework to inject the correct instance automatically.
+     *
+     * @Date 10:41 2025-10-28
+     * @Param none
+     * @return void
+     **/
     @Override
-    //news sources
     protected void configure() {
         bind(SourcesService.class).to(SourcesServiceImpl.class).asEagerSingleton();
     }

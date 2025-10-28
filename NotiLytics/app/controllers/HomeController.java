@@ -171,33 +171,45 @@ public class HomeController extends Controller {
             return ok(views.html.profile.render(res.source(), res.articles()));
         });
     }
-    /**
-     * Displays the News Sources page.
-     * Filters sources by country, category, and language if provided.
-     * Calls the SourcesService asynchronously and renders the result page.
+
+    /*
+     * @Author Yang
+     * @Description
+     * Handles the /sources page request (Task C).
+     * Fetches both the available filter options (facets) and
+     * the filtered list of news sources from the News API asynchronously.
+     * Combines the two results and renders the sources.scala.html view.
      *
-     * @param request  current HTTP request
-     * @param country  country filter (e.g., "us")
-     * @param category category filter (e.g., "business")
-     * @param language language filter (e.g., "en")
-     * @return async HTTP result with the sources page
-     * @author Yang Zhang
-     */
+     * @Date 10:40 2025-10-28
+     * @Param request  current HTTP request
+     * @Param country  optional country filter (e.g., "us")
+     * @Param category optional category filter (e.g., "business")
+     * @Param language optional language filter (e.g., "en")
+     * @return asynchronous HTTP Result rendering the News Sources page
+     **/
+
     public CompletionStage<Result> sources(Http.Request request,
                                            String country,
                                            String category,
                                            String language) {
-        Optional<String> oc   = Optional.ofNullable(country).map(String::toLowerCase).filter(s -> !s.isBlank());
-        Optional<String> ocat = Optional.ofNullable(category).map(String::toLowerCase).filter(s -> !s.isBlank());
-        Optional<String> olang = Optional.ofNullable(language).map(String::toLowerCase).filter(s -> !s.isBlank());
+        Optional<String> oCountry  = Optional.ofNullable(country).map(String::toLowerCase).filter(s -> !s.isBlank());
+        Optional<String> oCategory = Optional.ofNullable(category).map(String::toLowerCase).filter(s -> !s.isBlank());
+        Optional<String> oLang     = Optional.ofNullable(language).map(String::toLowerCase).filter(s -> !s.isBlank());
 
-        return sourcesService.listSources(oc, ocat, olang)
-                .thenApply(list -> ok(sources.render(list,
+        CompletionStage<models.Facets> facetsStage = sourcesService.getFacets();
+        CompletionStage<java.util.List<models.SourceItem>> listStage = sourcesService.listSources(oCountry, oCategory, oLang);
+
+        return facetsStage.thenCombine(listStage, (facets, list) ->
+                ok(views.html.sources.render(
+                        list,
                         country == null ? "" : country,
                         category == null ? "" : category,
-                        language == null ? "" : language)));
+                        language == null ? "" : language,
+                        facets.countries,
+                        facets.categories,
+                        facets.languages
+                )));
     }
-
 
     /**
      * Extract or create session ID from Play session.

@@ -1,27 +1,31 @@
 package services;
 
 import models.SourceItem;
+import models.Facets;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
-/**
- * Service interface for retrieving news sources from the News API.
- * Used in Task C to fetch and filter available sources asynchronously.
+/*
+ * @Author Yang
+ * @Description
+ * Service interface for retrieving and processing news sources data.
+ * Provides methods to list filtered sources and to fetch all unique filter options (facets)
+ * such as countries, categories, and languages for dropdown menus.
  *
- * @author Yang Zhang
- */
+ * @Date 10:46 2025-10-28
+ * @Param country   optional country filter (e.g., "us")
+ * @Param category  optional category filter (e.g., "business")
+ * @Param language  optional language filter (e.g., "en")
+ * @return          asynchronous results containing news sources or facet data
+ **/
 public interface SourcesService {
 
-    /**
-     * Fetches the list of available news sources from the API.
-     *
-     * @param country  optional country filter (e.g., "us")
-     * @param category optional category filter (e.g., "business")
-     * @param language optional language filter (e.g., "en")
-     * @return a CompletionStage with a list of matching SourceItem objects
-     */
     CompletionStage<List<SourceItem>> listSources(Optional<String> country,
                                                   Optional<String> category,
                                                   Optional<String> language);
+
+    // returns all distinct filter options from all sources
+    CompletionStage<Facets> getFacets();
 }
