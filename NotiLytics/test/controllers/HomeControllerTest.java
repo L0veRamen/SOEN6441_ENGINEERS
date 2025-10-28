@@ -1,143 +1,11 @@
 package controllers;
 
-//import models.Article;
-//import models.SearchBlock;
-//import models.SourceProfile;
-//import org.junit.Before;
-//import org.junit.Test;
-//import org.junit.runner.RunWith;
-//import org.mockito.ArgumentCaptor;
-//import org.mockito.Mock;
-//import org.mockito.junit.MockitoJUnitRunner;
-//import play.mvc.Http;
-//import play.mvc.Result;
-//import services.ProfileService;
-//import services.ProfileService.SourceProfileResult;
-//import services.SearchHistoryService;
-//
-//import java.util.List;
-//import java.util.concurrent.CompletableFuture;
-//
-//import static org.junit.Assert.*;
-//import static org.mockito.ArgumentMatchers.anyString;
-//import static org.mockito.Mockito.*;
-//import static play.mvc.Http.Status.OK;
-//import static play.test.Helpers.contentAsString;
-//
-//@RunWith(MockitoJUnitRunner.class)
-//public class HomeControllerTest {
-//
-//    @Mock
-//    private SearchHistoryService historyService;
-//    @Mock
-//    private ProfileService profileService;
-//
-//    private HomeController controller;
-//    private SearchBlock sampleBlock;
-//
-//    @Before
-//    public void setUp() {
-//        controller = new HomeController(historyService, profileService);
-//        sampleBlock = new SearchBlock(
-//                "java",
-//                "publishedAt",
-//                2,
-//                List.of(new Article(
-//                        "Test Title",
-//                        "https://example.com",
-//                        "desc",
-//                        "source-id",
-//                        "Source",
-//                        "2024-01-01T00:00:00Z")),
-//                "2024-01-01T00:00:00Z");
-//    }
-//
-//    @Test
-//    public void indexWithExistingSessionRendersHistory() {
-//        when(historyService.list("session-123")).thenReturn(List.of(sampleBlock));
-//
-//        Http.Request request = new Http.RequestBuilder()
-//                .method("GET")
-//                .uri("/")
-//                .session("sessionId", "session-123")
-//                .build();
-//
-//        Result result = controller.index(request).toCompletableFuture().join();
-//
-//        assertEquals(OK, result.status());
-//        verify(historyService).list("session-123");
-//    }
-//
-//    @Test
-//    public void indexWithoutSessionGeneratesNewSessionId() {
-//        when(historyService.list(anyString())).thenReturn(List.of());
-//
-//        Http.Request request = new Http.RequestBuilder()
-//                .method("GET")
-//                .uri("/")
-//                .build();
-//
-//        Result result = controller.index(request).toCompletableFuture().join();
-//
-//        assertEquals(OK, result.status());
-//        ArgumentCaptor<String> sessionCaptor = ArgumentCaptor.forClass(String.class);
-//        verify(historyService).list(sessionCaptor.capture());
-//        String generatedId = sessionCaptor.getValue();
-//        assertNotNull(generatedId);
-//        assertFalse(generatedId.isBlank());
-//    }
-//
-//    @Test
-//    public void sourceRendersWithExistingSource() {
-//        SourceProfileResult mockResult = new SourceProfileResult(new SourceProfile(),
-//                List.of(new Article("Title", "https://example.com", "desc",
-//                        "source-id", "Source", "2024-01-01T00:00:00Z")));
-//
-//        when(profileService.search("java"))
-//                .thenReturn(CompletableFuture.completedFuture(mockResult));
-//
-//        Http.Request request = new Http.RequestBuilder()
-//                .method("GET")
-//                .uri("/source/java")
-//                .build();
-//
-//        // Act
-//        Result result = controller.source(request, "java").toCompletableFuture().join();
-//
-//        // Assert
-//        assertEquals(OK, result.status());
-//        String body = contentAsString(result);
-//        assertTrue(body.contains("Title"));
-//    }
-//
-//    @Test
-//    public void sourceRendersWithNewSourceWhenNull() {
-//        SourceProfileResult mockResult = new SourceProfileResult(null,
-//                List.of(new Article("Title", "https://example.com", "desc",
-//                        "source-id", "Source", "2024-01-01T00:00:00Z")));
-//
-//        when(profileService.search("python"))
-//                .thenReturn(CompletableFuture.completedFuture(mockResult));
-//
-//        Http.Request request = new Http.RequestBuilder()
-//                .method("GET")
-//                .uri("/source/python")
-//                .build();
-//
-//        // Act
-//        Result result = controller.source(request, "python").toCompletableFuture().join();
-//
-//        // Assert
-//        assertEquals(OK, result.status());
-//        String body = contentAsString(result);
-//        assertTrue(body.contains("python"));
-//    }
-//}
 import models.Article;
 import models.ReadabilityScores;
 import models.SearchBlock;
 import models.SourceProfile;
 import models.WordStats;
+import models.Sentiment;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.jupiter.api.Nested;
@@ -166,7 +34,7 @@ import static play.test.Helpers.contentAsString;
  * Unit tests for HomeController
  * Tests all controller actions with mocked services
  * Achieves 100% code coverage for controller layer
- *
+ * <p>
  * Test Strategy:
  * - Mock all service dependencies
  * - Test equivalence classes for input validation
@@ -215,9 +83,11 @@ public class HomeControllerTest {
                         "source-id",
                         "Source",
                         "2024-01-01T00:00:00Z")),
+
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
-                List.of(new ReadabilityScores(8.0, 66.0)));
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.8, 0.1)
         sampleWordStats = new WordStats(
                 "test", 10, 100, 20,
                 List.of(
@@ -323,6 +193,8 @@ public class HomeControllerTest {
 	            assertTrue(e.getCause() instanceof RuntimeException);
 	        }
 	    }
+        );
+
     }
 
     // ==================== INDEX ACTION TESTS ====================
@@ -412,7 +284,11 @@ public class HomeControllerTest {
                 15,
                 List.of(new Article("Article 1", "https://example.com/1", "desc1",
                         "source-1", "Source", "2024-01-01T00:00:00Z")),
-                "2024-01-01T00:00:00Z");
+                "2024-01-01T00:00:00Z",
+                new ReadabilityScores(8.5, 65.0),
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.1, 0.8)
+        );
 
         when(searchService.search("java", "publishedAt"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -446,7 +322,11 @@ public class HomeControllerTest {
                 20,
                 List.of(new Article("Spring Article", "https://example.com/spring", "desc",
                         "source-2", "Source", "2024-01-01T00:00:00Z")),
-                "2024-01-01T00:00:00Z");
+                "2024-01-01T00:00:00Z",
+                new ReadabilityScores(8.5, 65.0),
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.5, 0.5)
+        );
 
         when(searchService.search("spring", "relevancy"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -478,7 +358,11 @@ public class HomeControllerTest {
                 25,
                 List.of(new Article("AI News", "https://example.com/ai", "desc",
                         "source-3", "Source", "2024-01-01T00:00:00Z")),
-                "2024-01-01T00:00:00Z");
+                "2024-01-01T00:00:00Z",
+                new ReadabilityScores(8.5, 65.0),
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.5, 0.5)
+        );
 
         when(searchService.search("ai", "popularity"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -569,7 +453,12 @@ public class HomeControllerTest {
                 8,
                 List.of(new Article("Test", "https://example.com/test", "desc",
                         "source-4", "Source", "2024-01-01T00:00:00Z")),
-                "2024-01-01T00:00:00Z");
+                "2024-01-01T00:00:00Z",
+                new ReadabilityScores(8.5, 65.0),
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.1, 0.1)
+
+        );
 
         when(searchService.search("testing", "publishedAt"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -601,7 +490,11 @@ public class HomeControllerTest {
                 12,
                 List.of(new Article("Session Test", "https://example.com/session", "desc",
                         "source-5", "Source", "2024-01-01T00:00:00Z")),
-                "2024-01-01T00:00:00Z");
+                "2024-01-01T00:00:00Z",
+                new ReadabilityScores(8.5, 65.0),
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.2, 0.7)
+        );
 
         when(searchService.search("session", "publishedAt"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -633,7 +526,11 @@ public class HomeControllerTest {
                 10,
                 List.of(new Article("New Session", "https://example.com/new", "desc",
                         "source-6", "Source", "2024-01-01T00:00:00Z")),
-                "2024-01-01T00:00:00Z");
+                "2024-01-01T00:00:00Z",
+                new ReadabilityScores(8.5, 65.0),
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.1, 0.8)
+                );
 
         when(searchService.search("newsession", "publishedAt"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -695,7 +592,12 @@ public class HomeControllerTest {
                 5,
                 List.of(new Article("Special", "https://example.com/special", "desc",
                         "source-7", "Source", "2024-01-01T00:00:00Z")),
-                "2024-01-01T00:00:00Z");
+                "2024-01-01T00:00:00Z",
+                new ReadabilityScores(8.5, 65.0),
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.1, 0.8)
+
+        );
 
         when(searchService.search("java & spring", "publishedAt"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));
@@ -726,7 +628,11 @@ public class HomeControllerTest {
                 7,
                 List.of(new Article("Default", "https://example.com/default", "desc",
                         "source-8", "Source", "2024-01-01T00:00:00Z")),
-                "2024-01-01T00:00:00Z");
+                "2024-01-01T00:00:00Z",
+                new ReadabilityScores(8.5, 65.0),
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.1, 0.8)
+        );
 
         when(searchService.search("default", "publishedAt"))
                 .thenReturn(CompletableFuture.completedFuture(mockBlock));

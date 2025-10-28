@@ -44,7 +44,6 @@ public class SearchBlockTest {
         List<Article> articles = List.of(createArticle("Test Article"));
         ReadabilityScores avgScores = new ReadabilityScores(8.5, 65.0);
         List<ReadabilityScores> individualScores = List.of(new ReadabilityScores(8.5, 65.0));
-
         SearchBlock block = new SearchBlock(
                 "test query",
                 "publishedAt",
@@ -52,7 +51,8 @@ public class SearchBlockTest {
                 articles,
                 "2025-01-01T12:00:00Z",
                 avgScores,
-                individualScores
+                individualScores,
+                Sentiment.POSITIVE
         );
 
         assertEquals("test query", block.query());
@@ -83,7 +83,8 @@ public class SearchBlockTest {
                 emptyArticles,
                 "2025-01-01T12:00:00Z",
                 avgScores,
-                emptyScores
+                emptyScores,
+                Sentiment.POSITIVE
         );
 
         assertTrue(block.articles().isEmpty());
@@ -120,7 +121,8 @@ public class SearchBlockTest {
                 articles,
                 "2025-01-01T12:00:00Z",
                 avgScores,
-                scores
+                scores,
+                Sentiment.POSITIVE
         );
 
         assertEquals(3, block.articles().size());
@@ -142,19 +144,22 @@ public class SearchBlockTest {
 
         // publishedAt
         SearchBlock block1 = new SearchBlock(
-                "query1", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query1", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
         assertEquals("publishedAt", block1.sortBy());
 
         // relevancy
         SearchBlock block2 = new SearchBlock(
-                "query2", "relevancy", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query2", "relevancy", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
         assertEquals("relevancy", block2.sortBy());
 
         // popularity
         SearchBlock block3 = new SearchBlock(
-                "query3", "popularity", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query3", "popularity", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
         assertEquals("popularity", block3.sortBy());
     }
@@ -172,11 +177,13 @@ public class SearchBlockTest {
         ReadabilityScores avgScores = new ReadabilityScores(5.0, 75.0);
 
         SearchBlock block1 = new SearchBlock(
-                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         SearchBlock block2 = new SearchBlock(
-                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         assertEquals(block1, block2);
@@ -196,11 +203,13 @@ public class SearchBlockTest {
         ReadabilityScores avgScores = new ReadabilityScores(5.0, 75.0);
 
         SearchBlock block1 = new SearchBlock(
-                "query1", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query1", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         SearchBlock block2 = new SearchBlock(
-                "query2", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query2", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         assertNotEquals(block1, block2);
@@ -219,11 +228,13 @@ public class SearchBlockTest {
         ReadabilityScores avgScores = new ReadabilityScores(5.0, 75.0);
 
         SearchBlock block1 = new SearchBlock(
-                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         SearchBlock block2 = new SearchBlock(
-                "query", "relevancy", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query", "relevancy", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         assertNotEquals(block1, block2);
@@ -242,7 +253,8 @@ public class SearchBlockTest {
         ReadabilityScores avgScores = new ReadabilityScores(5.0, 75.0);
 
         SearchBlock block = new SearchBlock(
-                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         assertEquals(block, block);
@@ -261,7 +273,8 @@ public class SearchBlockTest {
         ReadabilityScores avgScores = new ReadabilityScores(5.0, 75.0);
 
         SearchBlock block = new SearchBlock(
-                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         assertNotEquals(block, null);
@@ -280,7 +293,8 @@ public class SearchBlockTest {
         ReadabilityScores avgScores = new ReadabilityScores(5.0, 75.0);
 
         SearchBlock block = new SearchBlock(
-                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         assertNotEquals(block, "not a SearchBlock");
@@ -299,15 +313,18 @@ public class SearchBlockTest {
         ReadabilityScores avgScores = new ReadabilityScores(5.0, 75.0);
 
         SearchBlock block1 = new SearchBlock(
-                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         SearchBlock block2 = new SearchBlock(
-                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "query", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         SearchBlock block3 = new SearchBlock(
-                "different", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores
+                "different", "publishedAt", 1, articles, "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         // Equal objects must have equal hash codes
@@ -330,7 +347,8 @@ public class SearchBlockTest {
 
         SearchBlock block = new SearchBlock(
                 "test query", "publishedAt", 10, articles,
-                "2025-01-01T12:00:00Z", avgScores, scores
+                "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         String str = block.toString();
@@ -356,7 +374,8 @@ public class SearchBlockTest {
 
         SearchBlock block = new SearchBlock(
                 "query", "publishedAt", 1, originalArticles,
-                "2025-01-01T12:00:00Z", avgScores, scores
+                "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         // Modify original list
@@ -387,7 +406,8 @@ public class SearchBlockTest {
 
         SearchBlock block = new SearchBlock(
                 "max query", "publishedAt", 100, articles,
-                "2025-01-01T12:00:00Z", avgScores, scores
+                "2025-01-01T12:00:00Z", avgScores, scores,
+                Sentiment.POSITIVE
         );
 
         assertEquals(10, block.articles().size());
@@ -415,7 +435,8 @@ public class SearchBlockTest {
 
         for (String timestamp : validTimestamps) {
             SearchBlock block = new SearchBlock(
-                    "query", "publishedAt", 1, articles, timestamp, avgScores, scores
+                    "query", "publishedAt", 1, articles, timestamp, avgScores, scores,
+                    Sentiment.POSITIVE
             );
             assertEquals(timestamp, block.createdAtIso());
         }
@@ -442,7 +463,8 @@ public class SearchBlockTest {
 
         SearchBlock block = new SearchBlock(
                 "query", "publishedAt", 2, articles,
-                "2025-01-01T12:00:00Z", avgScores, individualScores
+                "2025-01-01T12:00:00Z", avgScores, individualScores,
+                Sentiment.POSITIVE
         );
 
         // Verify average scores
@@ -471,7 +493,8 @@ public class SearchBlockTest {
 
         SearchBlock block = new SearchBlock(
                 "no results", "publishedAt", 0, emptyArticles,
-                "2025-01-01T12:00:00Z", avgScores, emptyScores
+                "2025-01-01T12:00:00Z", avgScores, emptyScores,
+                Sentiment.POSITIVE
         );
 
         assertEquals(0, block.totalResults());

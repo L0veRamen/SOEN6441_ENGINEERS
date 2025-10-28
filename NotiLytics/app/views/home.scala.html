@@ -79,6 +79,11 @@
                                                 (@block.readability().getReadingEaseInterpretation())</span>
                                         </span>
                                     }
+                                    @if(block.articleSentiment() != null) {
+                                        <span>
+                                            | 💬 Overall Sentiment: <strong>@block.articleSentiment().getDescription()</strong>
+                                        </span>
+                                    }
                                 </div>
                             </div>
 
