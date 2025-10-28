@@ -35,8 +35,7 @@ public class SourceItem {
      * @Param language    two-letter language code (e.g., en, fr)
      * @Param country     two-letter country code (e.g., us, ca)
      **/
-    public SourceItem(String id, String name, String description, String url,
-                      String category, String language, String country) {
+    public SourceItem(String id, String name, String description, String url, String category, String language, String country) {
         this.id = id;
         this.name = name;
         this.description = description;

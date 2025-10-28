@@ -17,12 +17,16 @@ import static org.mockito.Mockito.mock;
 /**
  * Verifies DI wiring in AppModule by building a Guice injector.
  * Provides fake WSClient and minimal Config so eager singletons can be created.
+ *
+ * @author Yang
  */
 public class AppModuleTest {
 
     /**
      * Build an injector with AppModule + test overrides and
      * assert that SourcesService is bound to SourcesServiceImpl.
+     *
+     * @author Yang
      */
     @Test
     public void configureProvidesSourcesServiceBinding() {
@@ -41,7 +45,8 @@ public class AppModuleTest {
         Injector injector = Guice.createInjector(
                 new AppModule(),
                 new AbstractModule() {
-                    @Override protected void configure() {
+                    @Override
+                    protected void configure() {
                         bind(WSClient.class).toInstance(ws);
                         bind(Config.class).toInstance(cfg);
                     }

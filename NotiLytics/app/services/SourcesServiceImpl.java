@@ -55,15 +55,9 @@ public class SourcesServiceImpl implements SourcesService {
         this.readTimeoutMs = (int) Duration.parse("PT" + config.getDuration("newsapi.timeouts.read").toSeconds() + "S").toMillis();
 
         this.sourcesTtlSec = config.getDuration("cache.ttl.sources").toSeconds();
-        this.cache = Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofSeconds(sourcesTtlSec))
-                .maximumSize(Math.max(100, config.getInt("cache.maxSize")))
-                .build();
+        this.cache = Caffeine.newBuilder().expireAfterWrite(Duration.ofSeconds(sourcesTtlSec)).maximumSize(Math.max(100, config.getInt("cache.maxSize"))).build();
 
-        this.facetsCache = Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofSeconds(sourcesTtlSec))
-                .maximumSize(10)
-                .build();
+        this.facetsCache = Caffeine.newBuilder().expireAfterWrite(Duration.ofSeconds(sourcesTtlSec)).maximumSize(10).build();
     }
 
     /*
@@ -77,16 +71,12 @@ public class SourcesServiceImpl implements SourcesService {
      * @return async list of SourceItem
      */
     @Override
-    public CompletionStage<List<SourceItem>> listSources(Optional<String> country,
-                                                         Optional<String> category,
-                                                         Optional<String> language) {
+    public CompletionStage<List<SourceItem>> listSources(Optional<String> country, Optional<String> category, Optional<String> language) {
         String cacheKey = "src:" + country.orElse("") + "|" + category.orElse("") + "|" + language.orElse("");
         List<SourceItem> hit = cache.getIfPresent(cacheKey);
         if (hit != null) return CompletableFuture.completedFuture(hit);
 
-        WSRequest req = ws.url(baseUrl + "/sources")
-                .addHeader("X-Api-Key", apiKey)
-                .setRequestTimeout(Duration.ofMillis(connectTimeoutMs + readTimeoutMs));
+        WSRequest req = ws.url(baseUrl + "/sources").addHeader("X-Api-Key", apiKey).setRequestTimeout(Duration.ofMillis(connectTimeoutMs + readTimeoutMs));
 
         country.filter(s -> !s.isBlank()).ifPresent(v -> req.addQueryParameter("country", v));
         category.filter(s -> !s.isBlank()).ifPresent(v -> req.addQueryParameter("category", v));
@@ -100,29 +90,9 @@ public class SourcesServiceImpl implements SourcesService {
             if (arr == null || !arr.isArray()) return Collections.emptyList();
 
             List<SourceItem> list = new ArrayList<>();
-            arr.forEach(node -> list.add(new SourceItem(
-                    text(node, "id"),
-                    text(node, "name"),
-                    text(node, "description"),
-                    text(node, "url"),
-                    text(node, "category"),
-                    text(node, "language"),
-                    text(node, "country")
-            )));
+            arr.forEach(node -> list.add(new SourceItem(text(node, "id"), text(node, "name"), text(node, "description"), text(node, "url"), text(node, "category"), text(node, "language"), text(node, "country"))));
 
-            List<SourceItem> processed = list.stream()
-                    .filter(s -> s.name != null && !s.name.isBlank())
-                    .collect(Collectors.collectingAndThen(
-                            Collectors.toMap(
-                                    s -> s.id != null ? s.id : s.url,
-                                    s -> s,
-                                    (a, b) -> a,
-                                    LinkedHashMap::new
-                            ),
-                            m -> m.values().stream()
-                                    .sorted(Comparator.comparing(s -> s.name.toLowerCase(Locale.ROOT)))
-                                    .collect(Collectors.toList())
-                    ));
+            List<SourceItem> processed = list.stream().filter(s -> s.name != null && !s.name.isBlank()).collect(Collectors.collectingAndThen(Collectors.toMap(s -> s.id != null ? s.id : s.url, s -> s, (a, b) -> a, LinkedHashMap::new), m -> m.values().stream().sorted(Comparator.comparing(s -> s.name.toLowerCase(Locale.ROOT))).collect(Collectors.toList())));
 
             cache.put(cacheKey, processed);
             return processed;
@@ -143,26 +113,11 @@ public class SourcesServiceImpl implements SourcesService {
         if (hit != null) return CompletableFuture.completedFuture(hit);
 
         return listSources(Optional.empty(), Optional.empty(), Optional.empty()).thenApply(all -> {
-            List<String> countries = all.stream()
-                    .map(s -> s.country == null ? "" : s.country.trim())
-                    .filter(s -> !s.isEmpty())
-                    .distinct()
-                    .sorted()
-                    .toList();
+            List<String> countries = all.stream().map(s -> s.country == null ? "" : s.country.trim()).filter(s -> !s.isEmpty()).distinct().sorted().toList();
 
-            List<String> categories = all.stream()
-                    .map(s -> s.category == null ? "" : s.category.trim())
-                    .filter(s -> !s.isEmpty())
-                    .distinct()
-                    .sorted()
-                    .toList();
+            List<String> categories = all.stream().map(s -> s.category == null ? "" : s.category.trim()).filter(s -> !s.isEmpty()).distinct().sorted().toList();
 
-            List<String> languages = all.stream()
-                    .map(s -> s.language == null ? "" : s.language.trim())
-                    .filter(s -> !s.isEmpty())
-                    .distinct()
-                    .sorted()
-                    .toList();
+            List<String> languages = all.stream().map(s -> s.language == null ? "" : s.language.trim()).filter(s -> !s.isEmpty()).distinct().sorted().toList();
 
             Facets f = new Facets(countries, categories, languages);
             facetsCache.put("facets", f);

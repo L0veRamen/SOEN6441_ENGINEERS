@@ -8,18 +8,27 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
+/**
+ * Unit tests for the Facets model class.
+ * Ensures that the constructor correctly stores
+ * country, category, and language lists.
+ *
+ * @author Yang
+ */
 public class FacetsTest {
 
     /**
-     * Constructor stores the three lists as-is.
+     * Verifies that the constructor correctly stores
+     * the provided lists without copying or modifying them.
+     * Ensures that references and contents match.
      *
      * @author Yang
      */
     @Test
     public void constructorStoresProvidedLists() {
-        List<String> countries  = Arrays.asList("us", "ca");
+        List<String> countries = Arrays.asList("us", "ca");
         List<String> categories = Arrays.asList("business", "technology");
-        List<String> languages  = Arrays.asList("en", "fr");
+        List<String> languages = Arrays.asList("en", "fr");
 
         Facets f = new Facets(countries, categories, languages);
 
@@ -33,7 +42,8 @@ public class FacetsTest {
     }
 
     /**
-     * Works with empty lists.
+     * Checks that the class handles empty lists correctly.
+     * All lists should be non-null and empty.
      *
      * @author Yang
      */
@@ -53,13 +63,14 @@ public class FacetsTest {
     }
 
     /**
-     * Tolerates null lists (current behavior: keeps null references).
+     * Verifies current behavior when null lists are provided.
+     * The class does not perform null checks, so null references
+     * are stored directly as-is.
      *
      * @author Yang
      */
     @Test
     public void allowsNullLists_currentBehavior() {
-        // Current class does not guard against null; verify it simply stores nulls.
         Facets f = new Facets(null, null, null);
 
         assertNull(f.countries);

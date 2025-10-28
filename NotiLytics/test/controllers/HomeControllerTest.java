@@ -665,11 +665,12 @@ public class HomeControllerTest {
         verify(profileService, times(1)).search("test-source-123");
     }
 
-    // ==================== NEWS SOURCES TESTS ====================
+// ==================== NEWS SOURCES TESTS ====================
 
     /**
-     *
-     *
+     * Verifies that when all filters (country, category, language) are empty,
+     * the controller correctly passes Optional.empty() for each parameter,
+     * fetches facets, and renders successfully with status 200 (OK).
      *
      * @author Yang
      */
@@ -696,8 +697,9 @@ public class HomeControllerTest {
     }
 
     /**
-     *
-     *
+     * Tests that when filters are provided in mixed case (e.g., "US", "Business", "EN"),
+     * the controller lowercases all parameters and wraps them in Optionals before
+     * passing them to the service layer. Verifies that the correct Optionals are used.
      *
      * @author Yang
      */
@@ -723,8 +725,10 @@ public class HomeControllerTest {
     }
 
     /**
-     *
-     *
+     * Ensures that when the service returns an empty source list,
+     * the controller still renders the page (status 200 OK),
+     * correctly fetching facets and passing Optionals
+     * for the given filters (only country provided in this case).
      *
      * @author Yang
      */

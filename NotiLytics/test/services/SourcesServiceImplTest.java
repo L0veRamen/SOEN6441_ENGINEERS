@@ -15,7 +15,6 @@ import play.libs.ws.WSResponse;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -23,28 +22,35 @@ import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for SourcesServiceImpl.
- * - Verifies query parameters are applied
- * - Parses and de-duplicates sources, then sorts by name (case-insensitive)
- * - Caches listSources() results by (country|category|language)
- * - Throws on non-200 responses
- * - getFacets() computes distinct, sorted facets and caches them
+ * Ensures correct API calls, parsing logic, caching, and facet computation.
+ *
+ * @author Yang
  */
 @RunWith(MockitoJUnitRunner.class)
 public class SourcesServiceImplTest {
 
-    @Mock private WSClient ws;
-    @Mock private WSRequest request;
-    @Mock private WSResponse response;
-    @Mock private Config config;
+    @Mock
+    private WSClient ws;
+    @Mock
+    private WSRequest request;
+    @Mock
+    private WSResponse response;
+    @Mock
+    private Config config;
 
     private SourcesServiceImpl service;
 
     private static final String BASE = "https://newsapi.test";
-    private static final String KEY  = "k";
+    private static final String KEY = "k";
 
+    /**
+     * Sets up common configuration and mock behaviors before each test.
+     * Stubs config values and WSClient request chain.
+     *
+     * @author Yang
+     */
     @Before
     public void setUp() {
-        // --- Config stubs ---
         when(config.getString("newsapi.baseUrl")).thenReturn(BASE);
         when(config.getString("newsapi.key")).thenReturn(KEY);
         when(config.getDuration("newsapi.timeouts.connect")).thenReturn(Duration.ofSeconds(1));
@@ -52,7 +58,6 @@ public class SourcesServiceImplTest {
         when(config.getDuration("cache.ttl.sources")).thenReturn(Duration.ofSeconds(60));
         when(config.getInt("cache.maxSize")).thenReturn(100);
 
-        // --- WS chain stubs (fluent API returns same request) ---
         when(ws.url(BASE + "/sources")).thenReturn(request);
         when(request.addHeader(anyString(), anyString())).thenReturn(request);
         when(request.setRequestTimeout(any())).thenReturn(request);
@@ -67,10 +72,17 @@ public class SourcesServiceImplTest {
         when(response.getBody()).thenReturn(body);
     }
 
-    // ========== listSources: parses, dedup by id/url, sort by name ==========
+    /**
+     * Verifies that listSources():
+     * - Parses JSON correctly
+     * - Removes duplicate entries by ID/URL
+     * - Sorts results by name (case-insensitive)
+     * - Adds no query params for empty filters
+     *
+     * @author Yang
+     */
     @Test
     public void listSources_parsesDedupsAndSortsByName() {
-        // Two records share same id -> dedup keeps first; other one unique (no id, dedup by URL)
         String body = "{ \"sources\": [" +
                 "{ \"id\":\"abc\",\"name\":\"Zeta\",\"description\":\"d1\",\"url\":\"https://z.com\",\"category\":\"tech\",\"language\":\"en\",\"country\":\"us\" }," +
                 "{ \"id\":\"abc\",\"name\":\"Zeta DUP\",\"description\":\"dup\",\"url\":\"https://z-dup.com\",\"category\":\"tech\",\"language\":\"en\",\"country\":\"us\" }," +
@@ -82,22 +94,23 @@ public class SourcesServiceImplTest {
                 .listSources(Optional.empty(), Optional.empty(), Optional.empty())
                 .toCompletableFuture().join();
 
-        // Dedup -> 2 left
         assertEquals(2, out.size());
-        // Sorted by name case-insensitive: alpha, Zeta
         assertEquals("alpha", out.get(0).name);
-        assertEquals("Zeta",  out.get(1).name);
+        assertEquals("Zeta", out.get(1).name);
 
-        // No filter params added for empty optionals
         verify(request, never()).addQueryParameter(eq("country"), anyString());
         verify(request, never()).addQueryParameter(eq("category"), anyString());
         verify(request, never()).addQueryParameter(eq("language"), anyString());
-        // Header + timeout always added
         verify(request).addHeader("X-Api-Key", KEY);
         verify(request).setRequestTimeout(any());
     }
 
-    // ========== listSources: applies filters to query params ==========
+    /**
+     * Ensures that provided filter Optionals are correctly
+     * applied as query parameters in the HTTP request.
+     *
+     * @author Yang
+     */
     @Test
     public void listSources_appliesFilterQueryParams() {
         stubHttp(200, "{ \"sources\": [] }");
@@ -111,31 +124,37 @@ public class SourcesServiceImplTest {
         verify(request).addQueryParameter("language", "en");
     }
 
-    // ========== listSources: caches results per (country|category|language) ==========
+    /**
+     * Confirms that repeated calls with identical filter parameters
+     * return cached results and do not trigger new HTTP requests.
+     *
+     * @author Yang
+     */
     @Test
     public void listSources_usesInMemoryCacheOnRepeatedCall() {
         stubHttp(200, "{ \"sources\": [" +
                 "{ \"id\":\"x\",\"name\":\"NameX\",\"description\":\"d\",\"url\":\"https://x\",\"category\":\"c\",\"language\":\"en\",\"country\":\"us\" }]}");
 
-        // First call: hits HTTP
         List<SourceItem> r1 = service
                 .listSources(Optional.of("us"), Optional.of("c"), Optional.of("en"))
                 .toCompletableFuture().join();
         assertEquals(1, r1.size());
 
-        // Reset mocks to detect no further HTTP calls
         reset(ws, request, response);
-        // But service cache should still return same data
         List<SourceItem> r2 = service
                 .listSources(Optional.of("us"), Optional.of("c"), Optional.of("en"))
                 .toCompletableFuture().join();
         assertEquals(1, r2.size());
 
-        // Verify no new HTTP call (ws.url not invoked after reset)
         verify(ws, never()).url(anyString());
     }
 
-    // ========== listSources: non-200 -> throws ==========
+    /**
+     * Verifies that if the NewsAPI responds with a non-200 status,
+     * the service throws a RuntimeException.
+     *
+     * @author Yang
+     */
     @Test(expected = RuntimeException.class)
     public void listSources_throwsOnNon200() {
         stubHttp(500, "{ \"status\":\"error\" }");
@@ -144,7 +163,14 @@ public class SourcesServiceImplTest {
                 .toCompletableFuture().join();
     }
 
-    // ========== getFacets: computes distinct, sorted, and caches ==========
+    /**
+     * Tests that getFacets():
+     * - Aggregates distinct countries, categories, and languages
+     * - Returns them sorted
+     * - Caches the computed Facets for future calls
+     *
+     * @author Yang
+     */
     @Test
     public void getFacets_distinctSortedAndCached() {
         String body = "{ \"sources\": [" +
@@ -154,28 +180,30 @@ public class SourcesServiceImplTest {
                 "]}";
         stubHttp(200, body);
 
-        // First call: will do HTTP via listSources(empty, empty, empty)
         Facets f1 = service.getFacets().toCompletableFuture().join();
-        assertEquals(List.of("ca", "us"), f1.countries);         // sorted
+        assertEquals(List.of("ca", "us"), f1.countries);
         assertEquals(List.of("business", "technology"), f1.categories);
         assertEquals(List.of("en", "fr"), f1.languages);
 
-        // Reset network mocks to ensure subsequent call is served by facets cache
         reset(ws, request, response);
 
         Facets f2 = service.getFacets().toCompletableFuture().join();
-        assertEquals(List.of("ca", "us"), f2.countries);
-        assertEquals(List.of("business", "technology"), f2.categories);
-        assertEquals(List.of("en", "fr"), f2.languages);
+        assertEquals(f1.countries, f2.countries);
+        assertEquals(f1.categories, f2.categories);
+        assertEquals(f1.languages, f2.languages);
 
-        // No second HTTP call
         verify(ws, never()).url(anyString());
     }
 
-    // ========== Defensive: empty/invalid "sources" array -> empty list ==========
+    /**
+     * Handles edge case where the "sources" field is missing
+     * or not an array — should safely return an empty list.
+     *
+     * @author Yang
+     */
     @Test
     public void listSources_handlesMissingSourcesArray() {
-        stubHttp(200, "{ \"status\":\"ok\" }"); // no 'sources' field
+        stubHttp(200, "{ \"status\":\"ok\" }");
 
         List<SourceItem> out = service
                 .listSources(Optional.empty(), Optional.empty(), Optional.empty())
@@ -184,6 +212,12 @@ public class SourcesServiceImplTest {
         assertTrue(out.isEmpty());
     }
 
+    /**
+     * Covers text() helper behavior for null or missing fields,
+     * ensuring safe parsing and correct null handling.
+     *
+     * @author Yang
+     */
     @Test
     public void listSources_textHelperBranches_nullAndMissingFields() {
         String body = "{ \"sources\": [" +
