@@ -87,6 +87,34 @@ public class NewsApiClientTest {
     }
 
     /**
+     * Test empty key
+     *
+     * @author Group
+     */
+    @Test(expected = IllegalStateException.class)
+    public void TestBlankKey() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("newsapi.key", " ");
+        map.put("newsapi.baseUrl", " ");
+        Config badConfig = ConfigFactory.parseMap(map);
+        new NewsApiClient(wsClient, badConfig);
+    }
+
+    /**
+     * Test empty url
+     *
+     * @author Group
+     */
+    @Test(expected = IllegalStateException.class)
+    public void TestBlankUrl() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("newsapi.key", "somekey");
+        map.put("newsapi.baseUrl", " ");
+        Config badConfig = ConfigFactory.parseMap(map);
+        new NewsApiClient(wsClient, badConfig);
+    }
+
+    /**
      * Test constructor
      *
      * @author Group
@@ -94,6 +122,20 @@ public class NewsApiClientTest {
     @Test(expected = IllegalStateException.class)
     public void constructorRequiresBaseUrl() {
         Config badConfig = ConfigFactory.parseString("newsapi.key = \"abc\"");
+        new NewsApiClient(wsClient, badConfig);
+    }
+
+    /**
+     * Test constructor with default
+     *
+     * @author Group
+     */
+    @Test
+    public void constructorDefault() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("newsapi.key", "somekey");
+        map.put("newsapi.baseUrl", "someurl");
+        Config badConfig = ConfigFactory.parseMap(map);
         new NewsApiClient(wsClient, badConfig);
     }
 

@@ -139,10 +139,10 @@ public class HomeController extends Controller {
         }
 
         // Validate sortBy parameter
-        if (!isValidSortBy(sortBy)) {
-            log.warn("Invalid sortBy parameter: {}", sortBy);
-            sortBy = "publishedAt"; // Default to publishedAt
-        }
+//        if (!isValidSortBy(sortBy)) {
+//            log.warn("Invalid sortBy parameter: {}", sortBy);
+//            sortBy = "publishedAt"; // Default to publishedAt
+//        }
 
         log.info("Search request: query='{}' sortBy='{}'", query, sortBy);
 
@@ -218,17 +218,17 @@ public class HomeController extends Controller {
                 .orElse(java.util.UUID.randomUUID().toString());
     }
 
-    /**
-     * Validate sortBy parameter.
-     * Only allows: publishedAt, relevancy, popularity
-     *
-     * @param sortBy Sort option to validate
-     * @return true if valid, false otherwise
-     * @author Group
-     */
-    private boolean isValidSortBy(String sortBy) {
-        return "publishedAt".equals(sortBy)
-                || "relevancy".equals(sortBy)
-                || "popularity".equals(sortBy);
-    }
+//    /**
+//     * Validate sortBy parameter.
+//     * Only allows: publishedAt, relevancy, popularity
+//     *
+//     * @param sortBy Sort option to validate
+//     * @return true if valid, false otherwise
+//     * @author Group
+//     */
+//    private boolean isValidSortBy(String sortBy) {
+//        return "publishedAt".equals(sortBy)
+//                || "relevancy".equals(sortBy)
+//                || "popularity".equals(sortBy);
+//    }
 }

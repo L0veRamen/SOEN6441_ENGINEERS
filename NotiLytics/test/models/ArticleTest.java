@@ -85,4 +85,18 @@ public class ArticleTest {
         assertEquals("Source Name", withName.getSourceId());
         assertEquals("source-id", withoutName.getSourceId());
     }
+
+    /**
+     * Test blank inputs
+     *
+     * @author Group
+     */
+    @Test
+    public void testBlank() {
+        Article blank = new Article("Title", " ", null, " ", " ", null);
+
+        assertFalse(blank.hasUrl());
+        assertFalse(blank.hasSource());
+        assertEquals("Unknown Source", blank.getSourceDisplayName());
+    }
 }

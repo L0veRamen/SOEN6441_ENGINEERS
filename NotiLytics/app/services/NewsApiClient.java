@@ -216,10 +216,10 @@ public class NewsApiClient {
         this.baseUrl = config.hasPath("newsapi.baseUrl") ?
                 config.getString("newsapi.baseUrl") : "";
 
-        if (apiKey == null || apiKey.isBlank()) {
+        if (apiKey.isBlank()) {
             throw new IllegalStateException("Missing configuration: newsapi.key");
         }
-        if (baseUrl == null || baseUrl.isBlank()) {
+        if (baseUrl.isBlank()) {
             throw new IllegalStateException("Missing configuration: newsapi.baseUrl");
         }
 

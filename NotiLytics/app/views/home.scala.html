@@ -102,7 +102,7 @@
 
                                         <div class="article-meta">
                                             @if(article.hasSource()) {
-                                                Source: <a href="/source/@article.getSourceId()">@article.getSourceDisplayName()</a>
+                                                Source: <a href="@routes.HomeController.source(article.getSourceId)">@article.getSourceDisplayName()</a>
                                             }
                                             @if(article.publishedAt() != null && !article.publishedAt().isEmpty()) {
                                                 | Published: @article.publishedAt()
