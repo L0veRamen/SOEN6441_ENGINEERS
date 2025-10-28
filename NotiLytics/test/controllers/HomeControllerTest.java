@@ -373,6 +373,39 @@ public class HomeControllerTest {
     }
 
     /**
+     * Test search() with relevancy
+     *
+     * @author Group
+     */
+    @Test
+    public void searchWithRelevancy() {
+        SearchBlock mockBlock = new SearchBlock(
+                "ai",
+                "relevancy",
+                8,
+                List.of(new Article("AI Article", "https://example.com/ai", "desc",
+                        "source-3", "Source", "2024-01-01T00:00:00Z")),
+                "2024-01-01T00:00:00Z",
+                new ReadabilityScores(8.5, 65.0),
+                List.of(new ReadabilityScores(8.0, 66.0)),
+                Sentiment.fromScores(0.8, 0.1));
+
+        when(searchService.search("ai", "relevancy"))
+                .thenReturn(CompletableFuture.completedFuture(mockBlock));
+        doNothing().when(historyService).push(anyString(), any(SearchBlock.class));
+
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/notilytics?q=ai&sortBy=relevancy")
+                .build();
+
+        Result result = controller.search(request).join();
+
+        assertEquals(SEE_OTHER, result.status());
+        verify(searchService, times(1)).search("ai", "relevancy");
+    }
+
+    /**
      * Test search() with empty query
      * Equivalence class: Invalid input - empty query
      *

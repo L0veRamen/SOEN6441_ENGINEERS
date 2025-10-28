@@ -35,6 +35,7 @@ import views.html.sources;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -145,10 +146,10 @@ public class HomeController extends Controller {
         }
 
         // Validate sortBy parameter
-//        if (!isValidSortBy(sortBy)) {
-//            log.warn("Invalid sortBy parameter: {}", sortBy);
-//            sortBy = "publishedAt"; // Default to publishedAt
-//        }
+        if (!isValidSortBy(sortBy)) {
+            log.warn("Invalid sortBy parameter: {}", sortBy);
+            sortBy = "publishedAt"; // Default to publishedAt
+        }
 
         log.info("Search request: query='{}' sortBy='{}'", query, sortBy);
 
@@ -263,17 +264,17 @@ public class HomeController extends Controller {
                 .orElse(java.util.UUID.randomUUID().toString());
     }
 
-//    /**
-//     * Validate sortBy parameter.
-//     * Only allows: publishedAt, relevancy, popularity
-//     *
-//     * @param sortBy Sort option to validate
-//     * @return true if valid, false otherwise
-//     * @author Group
-//     */
-//    private boolean isValidSortBy(String sortBy) {
-//        return "publishedAt".equals(sortBy)
-//                || "relevancy".equals(sortBy)
-//                || "popularity".equals(sortBy);
-//    }
+    /**
+     * Validate sortBy parameter.
+     * Only allows: publishedAt, relevancy, popularity
+     *
+     * @param sortBy Sort option to validate
+     * @return true if valid, false otherwise
+     * @author Group
+     */
+    private boolean isValidSortBy(String sortBy) {
+        return "publishedAt".equals(sortBy)
+                || "relevancy".equals(sortBy)
+                || "popularity".equals(sortBy);
+    }
 }
