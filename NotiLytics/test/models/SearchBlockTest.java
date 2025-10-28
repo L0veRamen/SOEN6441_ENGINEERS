@@ -505,7 +505,7 @@ public class SearchBlockTest {
     /**
      * Test null fields
      *
-     * @author Yuhao Ma
+     * @author Group
      */
     @Test
     public void testNull() {
@@ -516,5 +516,16 @@ public class SearchBlockTest {
         );
         assertTrue(block.articles().isEmpty());
         assertTrue(block.articleReadability().isEmpty());
+    }
+
+    /**
+     * Test source
+     *
+     * @author Group
+     */
+    @Test
+    public void testSource() {
+        SourceProfile sp = new SourceProfile();
+        assertNull(sp.id);
     }
 }
