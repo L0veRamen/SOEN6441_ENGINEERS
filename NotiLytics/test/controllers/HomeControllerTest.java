@@ -87,7 +87,8 @@ public class HomeControllerTest {
                 "2024-01-01T00:00:00Z",
                 new ReadabilityScores(8.5, 65.0),
                 List.of(new ReadabilityScores(8.0, 66.0)),
-                Sentiment.fromScores(0.8, 0.1)
+                Sentiment.fromScores(0.8, 0.1));
+        
         sampleWordStats = new WordStats(
                 "test", 10, 100, 20,
                 List.of(
@@ -98,103 +99,127 @@ public class HomeControllerTest {
         );         
     }
     
-    @Nested
-    public class WordStatsTests {
-    	
-    	@Test
-    	void wordStatsAcceptsQueryTest() throws Exception {
-            when(wordStatsService.computeWordStats("test"))
-                    .thenReturn(CompletableFuture.completedFuture(sampleWordStats));
+    /**
+     * WordStatsTests Section
+     * 
+     * Test that word stats endpoint accepts valid query.
+     * Verifies that controller processes valid query and returns OK status.
+     * 
+     * @throws Exception if test execution fails
+     * @author Zi Lun Li
+     */
+	@Test
+	public void wordStatsAcceptsQueryTest() throws Exception {
+        when(wordStatsService.computeWordStats("test"))
+                .thenReturn(CompletableFuture.completedFuture(sampleWordStats));
 
-            Http.Request request = new Http.RequestBuilder()
-                    .method("GET")
-                    .uri("/wordstats?q=test")
-                    .build();
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/wordstats?q=test")
+                .build();
 
-            Result result = controller.wordStats(request, "test")
+        Result result = controller.wordStats(request, "test")
+                .toCompletableFuture()
+                .get();
+
+        assertEquals(OK, result.status());
+        verify(wordStatsService).computeWordStats("test");
+    }
+	
+	/**
+     * Test that word stats endpoint rejects invalid queries.
+     * Verifies that controller returns BAD_REQUEST for null, empty, and whitespace queries.
+     * 
+     * @throws Exception if test execution fails
+     * @author Zi Lun Li
+     */
+	@Test
+	public void wordStatsRejectsQueryTest() throws Exception {
+		Http.Request noQueryRequest = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/wordstats")
+                .build();
+		
+		Http.Request emptyQueryRequest = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/wordstats?q=")
+                .build();
+		
+		Http.Request whiteSpaceQueryRequest = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/wordstats?q=%20")
+                .build();
+
+        Result noQueryresult = controller.wordStats(noQueryRequest, null)
+                .toCompletableFuture()
+                .get();
+        
+        Result emptyQueryresult = controller.wordStats(emptyQueryRequest, "")
+                .toCompletableFuture()
+                .get();
+        
+        Result whiteSpaceQueryresult = controller.wordStats(whiteSpaceQueryRequest, " ")
+                .toCompletableFuture()
+                .get();
+
+        assertEquals(BAD_REQUEST, noQueryresult.status());
+        assertEquals(BAD_REQUEST, emptyQueryresult.status());
+        assertEquals(BAD_REQUEST, whiteSpaceQueryresult.status());
+        verifyNoInteractions(wordStatsService);
+    }
+	
+	/**
+     * Test that word stats handles empty results gracefully.
+     * Verifies that controller returns OK status even when no word statistics are found.
+     * 
+     * @throws Exception if test execution fails
+     * @author Zi Lun Li
+     */
+	@Test
+	public void wordStatsHandlesEmptyResultTest() throws Exception {
+		WordStats emptyWordStats = new WordStats("qwertyuiop", 0, 0, 0, List.of());
+        when(wordStatsService.computeWordStats("qwertyuiop"))
+                .thenReturn(CompletableFuture.completedFuture(emptyWordStats));
+
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/wordstats?q=qwertyuiop")
+                .build();
+
+        Result result = controller.wordStats(request, "qwertyuiop")
+                .toCompletableFuture()
+                .get();
+
+        assertEquals(OK, result.status());
+        verify(wordStatsService).computeWordStats("qwertyuiop");
+    }
+	
+	/**
+     * Test that word stats handles service errors properly.
+     * Verifies that controller propagates exceptions from the word stats service.
+     * 
+     * @throws Exception if test execution fails
+     * @author Zi Lun Li
+     */
+	 @Test
+	 public void wordStatsHandlesErrorTest() throws Exception {
+        CompletableFuture<WordStats> error = new CompletableFuture<>();
+        error.completeExceptionally(new RuntimeException("Error"));
+        when(wordStatsService.computeWordStats(anyString())).thenReturn(error);
+
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/wordstats?q=test")
+                .build();
+
+        try {
+            controller.wordStats(request, "test")
                     .toCompletableFuture()
                     .get();
-
-            assertEquals(OK, result.status());
-            verify(wordStatsService).computeWordStats("test");
+            fail("Throw error exception");
+        } catch (Exception e) {
+            assertTrue(e.getCause() instanceof RuntimeException);
         }
-    	
-    	@Test
-    	public void wordStatsRejectsQueryTest() throws Exception {
-    		Http.Request noQueryRequest = new Http.RequestBuilder()
-                    .method("GET")
-                    .uri("/wordstats")
-                    .build();
-    		
-    		Http.Request emptyQueryRequest = new Http.RequestBuilder()
-                    .method("GET")
-                    .uri("/wordstats?q=")
-                    .build();
-    		
-    		Http.Request whiteSpaceQueryRequest = new Http.RequestBuilder()
-                    .method("GET")
-                    .uri("/wordstats?q=%20")
-                    .build();
-
-            Result noQueryresult = controller.wordStats(noQueryRequest, null)
-                    .toCompletableFuture()
-                    .get();
-            
-            Result emptyQueryresult = controller.wordStats(emptyQueryRequest, "")
-                    .toCompletableFuture()
-                    .get();
-            
-            Result whiteSpaceQueryresult = controller.wordStats(whiteSpaceQueryRequest, " ")
-                    .toCompletableFuture()
-                    .get();
-
-            assertEquals(BAD_REQUEST, noQueryresult.status());
-            assertEquals(BAD_REQUEST, emptyQueryresult.status());
-            assertEquals(BAD_REQUEST, whiteSpaceQueryresult.status());
-            verifyNoInteractions(wordStatsService);
-        }
-    	
-    	@Test
-    	public void wordStatsHandlesEmptyResultTest() throws Exception {
-    		WordStats emptyWordStats = new WordStats("qwertyuiop", 0, 0, 0, List.of());
-            when(wordStatsService.computeWordStats("qwertyuiop"))
-                    .thenReturn(CompletableFuture.completedFuture(emptyWordStats));
-
-            Http.Request request = new Http.RequestBuilder()
-                    .method("GET")
-                    .uri("/wordstats?q=qwertyuiop")
-                    .build();
-
-            Result result = controller.wordStats(request, "qwertyuiop")
-                    .toCompletableFuture()
-                    .get();
-
-            assertEquals(OK, result.status());
-            verify(wordStatsService).computeWordStats("qwertyuiop");
-        }
-    	
-    	 @Test
-    	 public void wordStatsHandlesErrorTest() throws Exception {
-	        CompletableFuture<WordStats> error = new CompletableFuture<>();
-	        error.completeExceptionally(new RuntimeException("Error"));
-	        when(wordStatsService.computeWordStats(anyString())).thenReturn(error);
-
-	        Http.Request request = new Http.RequestBuilder()
-	                .method("GET")
-	                .uri("/wordstats?q=test")
-	                .build();
-
-	        try {
-	            controller.wordStats(request, "test")
-	                    .toCompletableFuture()
-	                    .get();
-	            fail("Throw error exception");
-	        } catch (Exception e) {
-	            assertTrue(e.getCause() instanceof RuntimeException);
-	        }
-	    }
-        );
-
     }
 
     // ==================== INDEX ACTION TESTS ====================

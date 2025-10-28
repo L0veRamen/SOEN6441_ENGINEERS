@@ -6,8 +6,20 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
+/**
+ * Unit tests for WordStats model.
+ * Tests the immutable record and its nested WordFrequency record.
+ * 
+ * @author Zi Lun Li
+ */
 public class WordStatsTest {
 
+	/**
+     * Test WordStats record creation and field access.
+     * Verifies all fields are correctly stored and retrieved.
+     * 
+     * @author Zi Lun Li
+     */
     @Test
     public void wordStatsRecordTest() {
         List<WordStats.WordFrequency> frequencies = List.of(
@@ -25,14 +37,26 @@ public class WordStatsTest {
         assertEquals(3, wordStats.wordFrequencies().size());
     }
 
+    /**
+     * Test WordFrequency record creation and field access.
+     * Verifies word and count are correctly stored.
+     * 
+     * @author Zi Lun Li
+     */
     @Test
     public void wordFrequencyRecordTest() {
         WordStats.WordFrequency frequency = new WordStats.WordFrequency("test", 2);
 
         assertEquals("test", frequency.word());
-        assertEquals(22, frequency.count());
+        assertEquals(2, frequency.count());
     }
 
+    /**
+     * Test WordStats with empty word frequencies list.
+     * Verifies handling of zero statistics.
+     * 
+     * @author Zi Lun Li
+     */
     @Test
     public void wordStatsEmptyFrequencyTest() {
         WordStats stats = new WordStats("test", 0, 0, 0, List.of());

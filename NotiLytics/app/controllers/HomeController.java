@@ -83,6 +83,18 @@ public class HomeController extends Controller {
         );
     }
     
+    /**
+     * Display view for word statistics page for a search query.
+     * Validates query parameter, computes statistics, and renders view.
+     * 
+  	 * Query parameter:
+     * - q (required): Search query string
+     * 
+     * @param request HTTP request
+     * @param query Search query from URL parameter (q)
+     * @return Async result with rendered word statistics view or bad request
+     * @author Zi Lun Li
+     */
     public CompletionStage<Result> wordStats(Http.Request request, String query) {
         if (query == null || query.isBlank()) {
             return java.util.concurrent.CompletableFuture.completedFuture(
