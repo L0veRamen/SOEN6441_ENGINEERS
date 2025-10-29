@@ -71,10 +71,9 @@
                     @for(it <- items.asScala) {
                         <tr>
                             <td class="name">
-                                @if(it.id != null) {
-                                    <a href='@routes.HomeController.source(it.id)'>@it.name</a>
-                                } else { @it.name }
-                                @if(it.description != null && it.description.trim.nonEmpty){
+                                @it.name
+
+                                @if(it.description != null && it.description.trim.nonEmpty) {
                                     <div class="desc">@it.description</div>
                                 }
                             </td>
@@ -82,7 +81,11 @@
                             <td>@Option(it.language).getOrElse("-")</td>
                             <td>@Option(it.country).getOrElse("-")</td>
                             <td>
-                            @if(it.url != null) { <a href="@it.url" target="_blank" rel="noreferrer" class="name">open</a> } else { - }
+                            @if(it.url != null && it.url.trim.nonEmpty) {
+                                <a href="@it.url" target="_blank" rel="noreferrer" class="open-btn">Open</a>
+                            } else {
+                                <span class="open-disabled">-</span>
+                            }
                             </td>
                         </tr>
                     }
