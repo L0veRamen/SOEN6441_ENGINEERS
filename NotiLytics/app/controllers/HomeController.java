@@ -24,13 +24,7 @@ import org.slf4j.LoggerFactory;
 import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
-import services.ProfileService;
-import services.SearchHistoryService;
-import services.SearchService;
-import services.WordStatsService;
-import services.SourcesService;
-import models.SourceItem;
-import views.html.sources;
+import services.*;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

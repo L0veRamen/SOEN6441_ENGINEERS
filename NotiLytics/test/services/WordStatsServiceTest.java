@@ -20,8 +20,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for WordStatsService.
