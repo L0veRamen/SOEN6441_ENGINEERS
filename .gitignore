@@ -1,5 +1,13 @@
 
 /.bsp/
+.cursor/
+htmlReport/
+project/
+resource-files/
+script-files/
+services/
+target/
+
 # Compiled class file
 *.class
 
