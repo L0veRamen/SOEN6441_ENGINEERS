@@ -37,9 +37,15 @@ body {
 }
 
 .btn.secondary {
-    background: #f6f7fb;
-    color: #333;
-    border: 1px solid #d9dce2;
+    display: inline-block;
+    background: #0a84ff;
+    color: #fff;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 600;
+    border: 0;
+    cursor: pointer;
 }
 
 .panel {
@@ -128,4 +134,37 @@ table.tbl {
     margin-top: 6px;
     color: #6b7280;
     font-size: 13px;
+}
+
+/* --- Open button styling --- */
+.open-btn {
+    display: inline-block;
+    background-color: #0a84ff; /* Apple blue */
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.open-btn:hover {
+    background-color: #0066cc; /* darker blue on hover */
+    transform: translateY(-1px); /* subtle lift effect */
+}
+
+.open-btn:active {
+    transform: translateY(1px);
+}
+
+/* --- Disabled placeholder (no URL) --- */
+.open-disabled {
+    display: inline-block;
+    color: #aaa;
+    font-size: 0.9em;
+    padding: 6px 14px;
+    background-color: #f2f2f2;
+    border-radius: 6px;
+    cursor: not-allowed;
 }

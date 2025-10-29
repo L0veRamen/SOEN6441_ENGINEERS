@@ -1,7 +1,7 @@
 package services;
 
-import models.SourceItem;
 import models.Facets;
+import models.SourceItem;
 
 import java.util.List;
 import java.util.Optional;

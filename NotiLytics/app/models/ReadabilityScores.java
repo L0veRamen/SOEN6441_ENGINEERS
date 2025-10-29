@@ -1,7 +1,5 @@
 package models;
 
-import java.util.Objects;
-
 /**
  * Represents readability scores for article descriptions
  * Uses Flesch-Kincaid Grade Level and Flesch Reading Ease formulas
@@ -46,7 +44,7 @@ public record ReadabilityScores(
      * Check if scores are valid (not default/error values)
      *
      * @return true if valid, false otherwise
-     * @author [Your Name]
+     * @author Chen Qian
      */
     public boolean isValid() {
         return gradeLevel > 0;

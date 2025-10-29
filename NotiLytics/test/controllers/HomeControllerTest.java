@@ -1,28 +1,16 @@
 package controllers;
 
-import models.Article;
-import models.ReadabilityScores;
-import models.SearchBlock;
-import models.SourceProfile;
-import models.WordStats;
-import models.Sentiment;
-import models.Facets;
-import models.SourceItem;
+import models.*;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.jupiter.api.Nested;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import play.mvc.Http;
 import play.mvc.Result;
-import services.ProfileService;
+import services.*;
 import services.ProfileService.SourceProfileResult;
-import services.SearchHistoryService;
-import services.SearchService;
-import services.WordStatsService;
-import services.SourcesService;
 
 import java.util.List;
 import java.util.Optional;

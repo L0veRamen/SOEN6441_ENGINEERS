@@ -3,6 +3,7 @@ package services;
 import models.ReadabilityScores;
 import models.SearchBlock;
 import models.Sentiment;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.ZonedDateTime;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
  * - Build SearchBlock
  * - NO direct API calls (delegates to NewsApiClient)
  *
- * @author [Your Name]
+ * @author Group
  */
 @Singleton
 public class SearchService {
