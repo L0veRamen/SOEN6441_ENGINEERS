@@ -5,19 +5,20 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-/**
- * Unit tests for the SourceItem model class.
- * Verifies equality and hashCode behavior based on ID and URL fields.
- *
- * @author Yang
+/** 
+ * @description: Unit tests for the SourceItem model,Verifies correct equality and hashCode behavior based on id and url.
+ * @author yang
+ * @date: 2025-10-30 12:51
+ * @version 1.0
  */
 public class SourceItemTest {
-
-    /**
-     * Checks that the same object is always equal to itself,
-     * and that hashCode remains stable for the same instance.
-     *
-     * @author Yang
+    
+    /** 
+     * @description:  Confirms that a SourceItem equals itself and its hashCode is stable.
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 12:51
      */
     @Test
     public void sameObjectIsEqual() {
@@ -25,12 +26,13 @@ public class SourceItemTest {
         assertEquals(item, item);
         assertEquals(item.hashCode(), item.hashCode());
     }
-
-    /**
-     * Verifies that two items with the same ID are considered equal
-     * even if their URLs differ.
-     *
-     * @author Yang
+    
+    /** 
+     * @description: Checks that two items with the same id are equal even if their URLs differ.
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 12:52
      */
     @Test
     public void equalWhenIdsMatchEvenIfUrlsDiffer() {
@@ -40,12 +42,13 @@ public class SourceItemTest {
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
     }
-
-    /**
-     * Ensures equality falls back to URL when both IDs are null.
-     * Two sources with the same URL are considered equal.
-     *
-     * @author Yang
+    
+    /** 
+     * @description:  Ensures that two items without IDs are equal if their URLs match.
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 12:52
      */
     @Test
     public void equalWhenIdsNullButUrlsMatch() {
@@ -55,12 +58,13 @@ public class SourceItemTest {
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
     }
-
-    /**
-     * Confirms that two different items with different IDs and URLs
-     * are not considered equal.
-     *
-     * @author Yang
+    
+    /** 
+     * @description:  Verifies that items with different ids and URLs are not equal.
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 12:52
      */
     @Test
     public void notEqualWhenIdAndUrlBothDifferent() {
@@ -70,12 +74,13 @@ public class SourceItemTest {
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
-
-    /**
-     * Ensures that a SourceItem is not equal to null
-     * or to an object of a completely different class.
-     *
-     * @author Yang
+    
+    /** 
+     * @description:  Checks that equality returns false when compared with null or a different class.
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 12:52
      */
     @Test
     public void notEqualToNullOrDifferentClass() {
@@ -84,13 +89,13 @@ public class SourceItemTest {
         assertNotEquals(a, null);
         assertNotEquals(a, "not a SourceItem");
     }
-
-    /**
-     * Tests that equality comparison uses ID first.
-     * If one item has an ID but the other doesn’t,
-     * even if URLs match, they are not equal.
-     *
-     * @author Yang
+    
+    /** 
+     * @description:  Checks that equality returns false when compared with null or a different class.
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 12:52
      */
     @Test
     public void equalityFallsBackToUrlWhenOneIdMissing() {
@@ -102,10 +107,11 @@ public class SourceItemTest {
     }
 
     /**
-     * Verifies that hashCode returns the same value
-     * across multiple invocations on the same object.
-     *
-     * @author Yang
+     * @description:  Verifies that hashCode produces consistent results across multiple calls.
+     * @param:
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 12:52
      */
     @Test
     public void hashCodeConsistentAcrossMultipleCalls() {

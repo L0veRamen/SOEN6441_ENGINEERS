@@ -191,23 +191,14 @@ public class HomeController extends Controller {
             return ok(views.html.profile.render(res.source(), res.articles()));
         });
     }
-
-    /**
-     * @Author Yang
-     * @Description
-     * Handles the /sources page request (Task C).
-     * Fetches both the available filter options (facets) and
-     * the filtered list of news sources from the News API asynchronously.
-     * Combines the two results and renders the sources.scala.html view.
-     *
-     * @Date 10:40 2025-10-28
-     * @Param request  current HTTP request
-     * @Param country  optional country filter (e.g., "us")
-     * @Param category optional category filter (e.g., "business")
-     * @Param language optional language filter (e.g., "en")
-     * @return asynchronous HTTP Result rendering the News Sources page
+    
+    /** 
+     * @description: Handles the /sources request by fetching available filters and filtered news sources, then renders the sources page.   
+     * @param: request;country;category;language
+     * @return: CompletionStage<Result>
+     * @author yang
+     * @date: 2025-10-30 12:59
      */
-
     public CompletionStage<Result> sources(Http.Request request,
                                            String country,
                                            String category,

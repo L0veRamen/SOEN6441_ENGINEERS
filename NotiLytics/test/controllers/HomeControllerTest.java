@@ -784,13 +784,13 @@ public class HomeControllerTest {
     }
 
 // ==================== NEWS SOURCES TESTS ====================
-
-    /**
-     * Verifies that when all filters (country, category, language) are empty,
-     * the controller correctly passes Optional.empty() for each parameter,
-     * fetches facets, and renders successfully with status 200 (OK).
-     *
-     * @author Yang
+    
+    /** 
+     * @description:  Tests that when no filters are provided, the controller calls listSources() with empty Optionals and renders successfully.
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 12:50
      */
     @Test
     public void sourcesWithEmptyFiltersUsesOptionalsEmptyAndRenders() {
@@ -813,13 +813,13 @@ public class HomeControllerTest {
         verify(sourcesService).getFacets();
         verify(sourcesService).listSources(eq(Optional.empty()), eq(Optional.empty()), eq(Optional.empty()));
     }
-
-    /**
-     * Tests that when filters are provided in mixed case (e.g., "US", "Business", "EN"),
-     * the controller lowercases all parameters and wraps them in Optionals before
-     * passing them to the service layer. Verifies that the correct Optionals are used.
-     *
-     * @author Yang
+    
+    /** 
+     * @description: Tests that uppercase filters (country, category, language) are converted to lowercase before calling the service.
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 12:50
      */
     @Test
     public void sourcesWithSpecificFiltersLowercasesAndPassesOptionals() {
@@ -842,13 +842,12 @@ public class HomeControllerTest {
         verify(sourcesService).listSources(eq(Optional.of("us")), eq(Optional.of("business")), eq(Optional.of("en")));
     }
 
-    /**
-     * Ensures that when the service returns an empty source list,
-     * the controller still renders the page (status 200 OK),
-     * correctly fetching facets and passing Optionals
-     * for the given filters (only country provided in this case).
-     *
-     * @author Yang
+    /** 
+     * @description: Tests that the controller renders correctly even when listSources() returns an empty result list.
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 12:50
      */
     @Test
     public void sourcesRendersWhenNoResults() {
