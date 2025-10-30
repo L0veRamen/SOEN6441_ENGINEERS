@@ -14,14 +14,21 @@
         <meta charset="utf-8">
         <title>News Sources</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <!-- Common styles -->
+        <link rel="stylesheet" media="screen" href='@routes.Assets.versioned("stylesheets/main.css")'>
+        <!-- Sources-specific styles -->
         <link rel="stylesheet" media="screen" href='@routes.Assets.versioned("stylesheets/sources.css")'>
     </head>
     <body>
-        <div class="container">
-            <div class="toolbar">
-                <h2 class="title">News Sources</h2>
-                <a href="@routes.HomeController.index()" class="btn">← Back to Home</a>
+        <header>
+            <div class="container">
+                <h1>📡 News Sources</h1>
+                <p class="subtitle">Browse and filter news sources by country, category, and language</p>
             </div>
+        </header>
+
+        <div class="container">
+            <a href="@routes.HomeController.index()" class="back-link">← Back to Home</a>
 
             <div class="panel">
                 <form method="get" action="@routes.HomeController.sources()">
@@ -47,8 +54,10 @@
                             }
                         </select>
 
-                        <button type="submit" class="btn">Filter</button>
-                        <a href="@routes.HomeController.sources()" class="btn secondary">Reset</a>
+                        <div class="button-group">
+                            <button type="submit" class="btn">Filter</button>
+                            <a href="@routes.HomeController.sources()" class="btn secondary">Reset</a>
+                        </div>
                     </div>
                 </form>
             </div>

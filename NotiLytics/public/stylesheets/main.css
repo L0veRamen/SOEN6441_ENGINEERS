@@ -1,5 +1,9 @@
-/* NotiLytics - Main Stylesheet */
+/* =================================================================
+   NotiLytics - Common/Shared Stylesheet
+   Contains: Base styles, header, forms, buttons, common components
+   ================================================================= */
 
+/* ==================== BASE STYLES ==================== */
 * {
     margin: 0;
     padding: 0;
@@ -13,32 +17,129 @@ body {
     line-height: 1.6;
 }
 
+/* ==================== CONTAINER ==================== */
 .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
 }
 
+/* ==================== HEADER (Shared across all pages) ==================== */
 header {
-    background-color: #2c3e50;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
     padding: 30px 0;
     margin-bottom: 30px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
-h1 {
+header .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+header h1 {
     text-align: center;
     font-size: 2.5em;
-    margin-bottom: 10px;
+    margin: 0 0 10px 0;
+    font-weight: 700;
+    letter-spacing: -0.5px;
 }
 
-.subtitle {
+header .subtitle {
     text-align: center;
     font-size: 1.1em;
     opacity: 0.9;
+    margin: 0;
+    font-weight: 400;
 }
 
+/* ==================== NAVIGATION ==================== */
+.header-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.back-link:hover {
+    background-color: #3498db;
+    color: white;
+}
+
+/* ==================== BUTTONS ==================== */
+button {
+    background-color: #3498db;
+    color: white;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #3498db;
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    box-shadow: 0 6px 16px rgba(52,152,219,0.25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-primary:hover {
+    background: #2f89c8;
+    box-shadow: 0 8px 20px rgba(52,152,219,0.35);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 10px rgba(52,152,219,0.25);
+}
+
+.btn-primary:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.35), 0 0 0 6px rgba(52,152,219,0.55);
+}
+
+.btn-with-icon .icon {
+    font-size: 1.05em;
+    line-height: 1;
+    display: inline-flex;
+}
+
+@media (max-width: 640px) {
+    .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ==================== FORMS ==================== */
 .search-form {
     background: white;
     padding: 30px;
@@ -82,22 +183,7 @@ select {
     cursor: pointer;
 }
 
-button {
-    background-color: #3498db;
-    color: white;
-    padding: 12px 30px;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-button:hover {
-    background-color: #2980b9;
-}
-
+/* ==================== SEARCH HISTORY (Home page) ==================== */
 .search-history {
     margin-top: 40px;
 }
@@ -137,6 +223,7 @@ button:hover {
     margin-right: 15px;
 }
 
+/* ==================== ARTICLES (Shared) ==================== */
 .article {
     padding: 15px 0;
     border-bottom: 1px solid #ecf0f1;
@@ -183,13 +270,7 @@ button:hover {
     text-decoration: underline;
 }
 
-.no-results {
-    text-align: center;
-    padding: 40px;
-    color: #7f8c8d;
-    font-size: 1.1em;
-}
-
+/* ==================== BADGES ==================== */
 .badge {
     display: inline-block;
     padding: 4px 10px;
@@ -209,17 +290,7 @@ button:hover {
     color: #388e3c;
 }
 
-.profile-card {
-    background: #f8f9fa;
-    padding: 15px;
-    border-radius: 6px;
-    margin-bottom: 20px;
-}
-
-/* ============================================ */
-/* TASK E: Readability Scores Styling          */
-/* ============================================ */
-
+/* ==================== READABILITY SCORES (Shared) ==================== */
 .readability-badge {
     display: inline-block;
     padding: 8px 12px;
@@ -247,7 +318,7 @@ button:hover {
     font-style: italic;
 }
 
-/* Optional: Color code by difficulty */
+/* Color code by difficulty */
 .readability-badge[data-difficulty="very-easy"],
 .readability-badge[data-difficulty="easy"] {
     background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
@@ -265,7 +336,6 @@ button:hover {
     border-left-color: #e53935;
 }
 
-/* Individual article readability (if you add it) */
 .article-readability {
     display: inline-block;
     margin-left: 10px;
@@ -280,13 +350,25 @@ button:hover {
     color: #333;
 }
 
-/*
-go to sources
- */
-.header-actions{display:flex;justify-content:center;margin-top:12px}
-.btn-primary{display:inline-flex;align-items:center;gap:8px;background:#3498db;color:#fff;text-decoration:none;padding:10px 18px;border-radius:12px;font-weight:700;letter-spacing:.2px;box-shadow:0 6px 16px rgba(52,152,219,.25);transition:transform .15s ease,box-shadow .15s ease,background-color .15s ease}
-.btn-primary:hover{background:#2f89c8;box-shadow:0 8px 20px rgba(52,152,219,.35);transform:translateY(-1px)}
-.btn-primary:active{transform:translateY(0);box-shadow:0 4px 10px rgba(52,152,219,.25)}
-.btn-primary:focus{outline:none;box-shadow:0 0 0 3px rgba(255,255,255,.35),0 0 0 6px rgba(52,152,219,.55)}
-.btn-with-icon .icon{font-size:1.05em;line-height:1;display:inline-flex}
-@media (max-width:640px){.btn-primary{width:100%;justify-content:center}}
+/* ==================== COMMON UTILITY CLASSES ==================== */
+.no-results {
+    text-align: center;
+    padding: 40px;
+    color: #7f8c8d;
+    font-size: 1.1em;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    header h1 {
+        font-size: 2em;
+    }
+    
+    header .subtitle {
+        font-size: 1em;
+    }
+}

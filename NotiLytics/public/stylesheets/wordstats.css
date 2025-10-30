@@ -1,3 +1,9 @@
+/* =================================================================
+   NotiLytics - Word Statistics Page Specific Stylesheet
+   For: Word frequency analysis page
+   ================================================================= */
+
+/* ==================== STATS HEADER ==================== */
 .stats-header {
     background: white;
     padding: 25px;
@@ -6,6 +12,12 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+.stats-header h2 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+/* ==================== STATS SUMMARY CARDS ==================== */
 .stats-summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -38,18 +50,7 @@
     font-size: 1em;
 }
 
-.back-link {
-    display: inline-block;
-    margin-bottom: 20px;
-    color: #3498db;
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.back-link:hover {
-    text-decoration: underline;
-}
-
+/* ==================== WORD CLOUD / FREQUENCIES ==================== */
 .word-cloud {
     background: white;
     padding: 25px;
@@ -63,6 +64,7 @@
     color: #2c3e50;
 }
 
+/* ==================== WORD TABLE ==================== */
 .word-table-container {
     max-height: 500px;
     overflow-y: auto;
@@ -119,9 +121,27 @@
     font-weight: normal;
 }
 
-.no-results {
-    text-align: center;
-    padding: 40px;
-    color: #7f8c8d;
-    font-size: 1.1em;
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 768px) {
+    .stats-summary {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-box {
+        padding: 12px;
+    }
+    
+    .stat-number {
+        font-size: 1.5em;
+    }
+    
+    .word-table-container {
+        max-height: 400px;
+    }
+    
+    .word-table th,
+    .word-table td {
+        padding: 8px;
+        font-size: 0.9em;
+    }
 }

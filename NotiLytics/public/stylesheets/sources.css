@@ -1,15 +1,16 @@
-body {
-    margin: 24px;
-    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    color: #111;
-}
+/* =================================================================
+   NotiLytics - Sources Page Specific Stylesheet
+   For: News sources listing and filtering page
+   ================================================================= */
 
+/* ==================== SOURCES-SPECIFIC CONTAINER ==================== */
 .container {
     max-width: 980px;
     margin: 0 auto;
     padding: 0 16px;
 }
 
+/* ==================== TOOLBAR ==================== */
 .toolbar {
     display: flex;
     justify-content: space-between;
@@ -21,68 +22,80 @@ body {
     margin: 0;
     font-size: 28px;
     font-weight: 800;
-    letter-spacing: .2px;
+    letter-spacing: 0.2px;
 }
 
+/* ==================== SOURCES-SPECIFIC BUTTONS ==================== */
 .btn {
     display: inline-block;
     background: #0a84ff;
     color: #fff;
     text-decoration: none;
-    padding: 8px 16px;
-    border-radius: 10px;
+    padding: 10px 24px;
+    border-radius: 15px;
     font-weight: 600;
     border: 0;
     cursor: pointer;
+    min-width: 30px;
+    text-align: center;
+    transition: background-color 0.2s, opacity 0.2s;
 }
 
 .btn.secondary {
-    display: inline-block;
-    background: #0a84ff;
-    color: #fff;
-    text-decoration: none;
-    padding: 8px 16px;
-    border-radius: 10px;
-    font-weight: 600;
-    border: 0;
-    cursor: pointer;
+    background: #6c757d;
 }
 
+.btn:hover {
+    opacity: 0.9;
+}
+
+/* ==================== FILTER PANEL - SINGLE ROW LAYOUT ==================== */
 .panel {
     border: 1px solid #e3e6ec;
     border-radius: 12px;
     padding: 14px;
     margin-bottom: 14px;
+    background: white;
 }
 
 .row {
     display: flex;
     gap: 10px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap; /* CHANGED: Keep everything in one row */
     align-items: center;
+    justify-content: flex-start; /* CHANGED: Align items to start */
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-left: auto; /* Push buttons to the right */
+    flex-shrink: 0; /* Prevent buttons from shrinking */
 }
 
 .input {
     padding: 10px 12px;
     border: 1px solid #d9dce2;
     border-radius: 10px;
-    min-width: 220px;
+    min-width: 180px; /* CHANGED: Reduced from 220px */
+    flex: 1; /* CHANGED: Allow inputs to grow equally */
     font-size: 15px;
 }
 
 .input:focus {
     outline: none;
     border-color: #0a84ff;
-    box-shadow: 0 0 0 3px rgba(10, 132, 255, .15);
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
 }
 
+/* ==================== KPIS / FILTER SUMMARY ==================== */
 .kpis {
     margin: 8px 0 14px;
     text-align: center;
     color: #666;
 }
 
-.badge {
+.kpis .badge {
     display: inline-block;
     margin: 0 4px;
     padding: 4px 8px;
@@ -92,6 +105,7 @@ body {
     font-size: 12px;
 }
 
+/* ==================== SOURCES TABLE ==================== */
 .tblwrap {
     overflow-x: auto;
 }
@@ -102,6 +116,7 @@ table.tbl {
     border: 1px solid #c9ced6;
     border-radius: 10px;
     overflow: hidden;
+    background: white;
 }
 
 .tbl th,
@@ -109,16 +124,35 @@ table.tbl {
     padding: 12px 14px;
     border-bottom: 1px solid #d7dbe2;
     vertical-align: top;
+    text-align: left;
 }
 
 .tbl thead th {
     background: #f4f6fb;
     font-weight: 700;
     border-bottom: 2px solid #c9ced6;
+    text-align: center;
+}
+
+/* Center align the smaller columns */
+.tbl th:nth-child(2),
+.tbl td:nth-child(2),
+.tbl th:nth-child(3),
+.tbl td:nth-child(3),
+.tbl th:nth-child(4),
+.tbl td:nth-child(4),
+.tbl th:nth-child(5),
+.tbl td:nth-child(5) {
+    text-align: center;
 }
 
 .tbl tbody tr:hover {
     background: #fafbff;
+}
+
+/* ==================== SOURCE NAME & DESCRIPTION ==================== */
+.name {
+    font-weight: 600;
 }
 
 .name a {
@@ -134,12 +168,13 @@ table.tbl {
     margin-top: 6px;
     color: #6b7280;
     font-size: 13px;
+    font-weight: normal;
 }
 
-/* --- Open button styling --- */
+/* ==================== OPEN BUTTON ==================== */
 .open-btn {
     display: inline-block;
-    background-color: #0a84ff; /* Apple blue */
+    background-color: #0a84ff;
     color: #fff;
     font-weight: 600;
     text-decoration: none;
@@ -150,15 +185,14 @@ table.tbl {
 }
 
 .open-btn:hover {
-    background-color: #0066cc; /* darker blue on hover */
-    transform: translateY(-1px); /* subtle lift effect */
+    background-color: #0066cc;
+    transform: translateY(-1px);
 }
 
 .open-btn:active {
     transform: translateY(1px);
 }
 
-/* --- Disabled placeholder (no URL) --- */
 .open-disabled {
     display: inline-block;
     color: #aaa;
@@ -167,4 +201,50 @@ table.tbl {
     background-color: #f2f2f2;
     border-radius: 6px;
     cursor: not-allowed;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 1024px) {
+    /* For medium screens, reduce input width slightly */
+    .input {
+        min-width: 150px;
+    }
+}
+
+@media (max-width: 768px) {
+    /* For tablets and mobile, stack filters vertically */
+    .row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .input {
+        width: 100%;
+        min-width: 100%;
+    }
+    
+    .button-group {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .btn {
+        flex: 1;
+    }
+    
+    .tblwrap {
+        margin: 0 -16px;
+    }
+}
+
+/* ==================== LARGER SCREENS OPTIMIZATION ==================== */
+@media (min-width: 1200px) {
+    /* For larger screens, allow more comfortable spacing */
+    .input {
+        min-width: 200px;
+    }
+    
+    .row {
+        gap: 15px;
+    }
 }
