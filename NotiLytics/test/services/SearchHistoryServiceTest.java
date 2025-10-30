@@ -9,6 +9,10 @@ import models.Sentiment;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import java.lang.reflect.Field;
+
+import java.util.ArrayDeque;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -390,5 +394,28 @@ public class SearchHistoryServiceTest {
         assertTrue("Null session should return empty", stressService.list(null).isEmpty());
         assertTrue("Blank session should return empty", stressService.list("").isEmpty());
         assertTrue("Whitespace session should return empty", stressService.list("   ").isEmpty());
+    }
+
+    /** 
+     * @description: Covers the branch where the deque exists but is empty (`deque.isEmpty()`).
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 14:03
+     */
+    @Test
+    public void listReturnsEmptyWhenDequePresentButEmpty() throws Exception {
+
+        Field f = SearchHistoryService.class.getDeclaredField("cache");
+        f.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Cache<String, ArrayDeque<SearchBlock>> cache =
+                (Cache<String, ArrayDeque<SearchBlock>>) f.get(service);
+
+        String sessionId = "present-but-empty";
+        cache.put(sessionId, new ArrayDeque<>());
+
+        List<SearchBlock> history = service.list(sessionId);
+        assertTrue("Expected empty list when deque is present but empty", history.isEmpty());
     }
 }

@@ -21,6 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import java.lang.reflect.Method;
+
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -1201,5 +1204,21 @@ public class NewsApiClientTest {
 
         assertTrue(response.articles().isEmpty());
         assertEquals(0, response.totalResults());
+    }
+
+    /** 
+     * @description: Covers the `node == null` branch of getTextOrNull using reflection,asserting it returns null as expected.
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 14:07
+     */
+    @Test
+    public void getTextOrNull_nodeIsNullBranchCovered() throws Exception {
+        Method m = NewsApiClient.class.getDeclaredMethod("getTextOrNull", JsonNode.class, String.class);
+        m.setAccessible(true);
+
+        Object out = m.invoke(client, null, "whatever");
+        assertNull("When node is null, getTextOrNull should return null", out);
     }
 }
