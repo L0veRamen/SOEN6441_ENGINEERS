@@ -4,13 +4,13 @@
 
 **Team Setup:**
 
-**YuHao Ma**: Individual part a) Source Website Profile
+**Yuhao Ma**: Individual part a) Source Website Profile
 
 **Zilun Li**: Individual part b) Word Stats
 
 **Yang Zhang**: Individual part c) New Sources
 
-**Ruochen Qiao**: Individual part d) Article Sentiment
+**Ruochen Qiao**: Individual part d) models.Article Sentiment
 
 **Chen Qian**: Individual part e) Description readability
 

@@ -1,0 +1,108 @@
+/* =================================================================
+   NotiLytics - Profile Page Specific Stylesheet
+   For: Source profile page showing source details and articles
+   ================================================================= */
+
+/* ==================== PROFILE CARD ==================== */
+.profile-card {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.profile-card h2 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.8em;
+}
+
+.profile-card p {
+    margin: 10px 0;
+    line-height: 1.6;
+}
+
+.profile-card strong {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.profile-card a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.profile-card a:hover {
+    text-decoration: underline;
+}
+
+/* ==================== PROFILE DETAILS ==================== */
+.profile-info {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.profile-info dt {
+    font-weight: 600;
+    color: #667eea;
+}
+
+.profile-info dd {
+    margin: 0;
+    color: #333;
+}
+
+/* ==================== RECENT ARTICLES SECTION ==================== */
+.recent-articles {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.recent-articles h2 {
+    margin-bottom: 20px;
+    color: #667eea;
+}
+
+.no-articles {
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    padding: 40px 0;
+}
+
+/* ==================== PROFILE LINKS ==================== */
+.profile-link {
+    margin-left: 5px;
+    color: #667eea;
+    text-decoration: none;
+    font-size: 12px;
+}
+
+.profile-link:hover {
+    text-decoration: underline;
+}
+
+/* ==================== PROFILE-SPECIFIC ARTICLE STYLING ==================== */
+.profile-card .article-description {
+    margin-top: 8px;
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 768px) {
+    .profile-info {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .profile-card {
+        padding: 20px;
+    }
+}

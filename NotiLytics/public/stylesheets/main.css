@@ -1,0 +1,374 @@
+/* =================================================================
+   NotiLytics - Common/Shared Stylesheet
+   Contains: Base styles, header, forms, buttons, common components
+   ================================================================= */
+
+/* ==================== BASE STYLES ==================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* ==================== CONTAINER ==================== */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ==================== HEADER (Shared across all pages) ==================== */
+header {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: white;
+    padding: 30px 0;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+header .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+header h1 {
+    text-align: center;
+    font-size: 2.5em;
+    margin: 0 0 10px 0;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+header .subtitle {
+    text-align: center;
+    font-size: 1.1em;
+    opacity: 0.9;
+    margin: 0;
+    font-weight: 400;
+}
+
+/* ==================== NAVIGATION ==================== */
+.header-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.back-link:hover {
+    background-color: #3498db;
+    color: white;
+}
+
+/* ==================== BUTTONS ==================== */
+button {
+    background-color: #3498db;
+    color: white;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #3498db;
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    box-shadow: 0 6px 16px rgba(52,152,219,0.25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-primary:hover {
+    background: #2f89c8;
+    box-shadow: 0 8px 20px rgba(52,152,219,0.35);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 10px rgba(52,152,219,0.25);
+}
+
+.btn-primary:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.35), 0 0 0 6px rgba(52,152,219,0.55);
+}
+
+.btn-with-icon .icon {
+    font-size: 1.05em;
+    line-height: 1;
+    display: inline-flex;
+}
+
+@media (max-width: 640px) {
+    .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ==================== FORMS ==================== */
+.search-form {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #2c3e50;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+input[type="text"]:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    background-color: white;
+    cursor: pointer;
+}
+
+/* ==================== SEARCH HISTORY (Home page) ==================== */
+.search-history {
+    margin-top: 40px;
+}
+
+.search-history h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+}
+
+.search-block {
+    background: white;
+    padding: 25px;
+    margin-bottom: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.search-block-header {
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.search-block-header h3 {
+    color: #2c3e50;
+    font-size: 1.3em;
+    margin-bottom: 8px;
+}
+
+.search-meta {
+    color: #7f8c8d;
+    font-size: 0.9em;
+}
+
+.search-meta span {
+    margin-right: 15px;
+}
+
+/* ==================== ARTICLES (Shared) ==================== */
+.article {
+    padding: 15px 0;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.article:last-child {
+    border-bottom: none;
+}
+
+.article-title {
+    font-size: 1.1em;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.article-title a {
+    color: #2c3e50;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.article-title a:hover {
+    color: #3498db;
+}
+
+.article-meta {
+    color: #7f8c8d;
+    font-size: 0.9em;
+    margin-bottom: 5px;
+}
+
+.article-description {
+    color: #555;
+    line-height: 1.5;
+}
+
+.source-link {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.source-link:hover {
+    text-decoration: underline;
+}
+
+/* ==================== BADGES ==================== */
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-left: 10px;
+}
+
+.badge-info {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.badge-success {
+    background-color: #e8f5e9;
+    color: #388e3c;
+}
+
+/* ==================== READABILITY SCORES (Shared) ==================== */
+.readability-badge {
+    display: inline-block;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-left: 4px solid #4caf50;
+    border-radius: 4px;
+    font-size: 0.9em;
+    margin-top: 8px;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.readability-badge strong {
+    color: #2e7d32;
+}
+
+.readability-interpretation {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #fff;
+    border-radius: 12px;
+    font-size: 0.85em;
+    color: #666;
+    margin-left: 8px;
+    font-style: italic;
+}
+
+/* Color code by difficulty */
+.readability-badge[data-difficulty="very-easy"],
+.readability-badge[data-difficulty="easy"] {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-left-color: #4caf50;
+}
+
+.readability-badge[data-difficulty="standard"] {
+    background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
+    border-left-color: #fbc02d;
+}
+
+.readability-badge[data-difficulty="difficult"],
+.readability-badge[data-difficulty="very-difficult"] {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    border-left-color: #e53935;
+}
+
+.article-readability {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 2px 8px;
+    background-color: #f5f5f5;
+    border-radius: 3px;
+    font-size: 0.8em;
+    color: #666;
+}
+
+.article-readability strong {
+    color: #333;
+}
+
+/* ==================== COMMON UTILITY CLASSES ==================== */
+.no-results {
+    text-align: center;
+    padding: 40px;
+    color: #7f8c8d;
+    font-size: 1.1em;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    header h1 {
+        font-size: 2em;
+    }
+    
+    header .subtitle {
+        font-size: 1em;
+    }
+}
