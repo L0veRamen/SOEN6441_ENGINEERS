@@ -1,6 +1,9 @@
 package models;
 
 import org.junit.Test;
+import services.ReadabilityService;
+
+import java.lang.reflect.Method;
 
 import static org.junit.Assert.*;
 
@@ -99,5 +102,29 @@ public class ReadabilityScoresTest {
 
         assertEquals(scores1, scores2);
         assertNotEquals(scores1, scores3);
+    }
+
+    /**
+     * Ensure syllable adjustment for consonant + "le" endings is applied
+     * Uses reflection to call the private helper so the specific branch executes
+     *
+     * @throws Exception when reflection fails
+     */
+    @Test
+    public void testLeEndingBranchInReadabilityService() throws Exception {
+        ReadabilityService service = new ReadabilityService();
+        Method countSyllablesInWord = ReadabilityService.class
+                .getDeclaredMethod("countSyllablesInWord", String.class);
+        countSyllablesInWord.setAccessible(true);
+
+        int table = (Integer) countSyllablesInWord.invoke(service, "table");
+        int simple = (Integer) countSyllablesInWord.invoke(service, "simple");
+        int kale = (Integer) countSyllablesInWord.invoke(service, "kale");
+        int le = (Integer) countSyllablesInWord.invoke(service, "le");
+
+        assertEquals(2, table);   // consonant before "le" adds a syllable
+        assertEquals(2, simple);  // consonant before "le" adds a syllable
+        assertEquals(1, kale);    // vowel before "le" does not add a syllable
+        assertEquals(1, le);      // short word 'le' triggers length <= 2 branch
     }
 }

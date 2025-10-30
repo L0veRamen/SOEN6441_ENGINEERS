@@ -14,8 +14,10 @@ import java.util.List;
  * Uses Java 8+ Streams API for processing
  *
  * Formulas:
- * - Flesch-Kincaid Grade Level = 0.39 * (words/sentences) + 11.8 * (syllables/words) - 15.59
- * - Flesch Reading Ease = 206.835 - 1.015 * (words/sentences) - 84.6 * (syllables/words)
+ * - Flesch-Kincaid Grade Level = 0.39 * (words/sentences) + 11.8 *
+ * (syllables/words) - 15.59
+ * - Flesch Reading Ease = 206.835 - 1.015 * (words/sentences) - 84.6 *
+ * (syllables/words)
  *
  * @author Chen Qian
  */
@@ -98,7 +100,7 @@ public class ReadabilityService {
         int totalSentences = countSentences(description);
         int totalSyllables = countSyllables(description);
 
-        if (totalWords == 0 || totalSentences == 0) {
+        if (totalWords == 0) {
             return new ReadabilityScores(0, 0);
         }
 
@@ -189,6 +191,11 @@ public class ReadabilityService {
             return 0;
         }
 
+        // Precompute the consonant+'le' ending check so we can reuse it below without re-evaluating
+        boolean hasConsonantBeforeLe = word.endsWith("le") &&
+                word.length() > 2 &&
+                "aeiouy".indexOf(word.charAt(word.length() - 3)) < 0;
+
         if (word.length() <= 2) {
             return 1;
         }
@@ -214,8 +221,7 @@ public class ReadabilityService {
         }
 
         // Adjust for 'le' ending after consonant (e.g., "table", "simple")
-        if (word.length() >= 3 && word.endsWith("le") &&
-                "aeiouy".indexOf(word.charAt(word.length() - 3)) < 0) {
+        if (hasConsonantBeforeLe) {
             count++;
         }
 
