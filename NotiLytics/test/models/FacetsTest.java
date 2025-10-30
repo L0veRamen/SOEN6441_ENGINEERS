@@ -8,21 +8,20 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-/**
- * Unit tests for the Facets model class.
- * Ensures that the constructor correctly stores
- * country, category, and language lists.
- *
- * @author Yang
+/** 
+ * @description: Unit tests for the Facets model class.
+ * @author yang
+ * @date: 2025-10-30 12:51
+ * @version 1.0
  */
 public class FacetsTest {
-
-    /**
-     * Verifies that the constructor correctly stores
-     * the provided lists without copying or modifying them.
-     * Ensures that references and contents match.
-     *
-     * @author Yang
+    
+    /** 
+     * @description:  Verifies that the constructor correctly stores the provided list references and values.
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 12:51
      */
     @Test
     public void constructorStoresProvidedLists() {
@@ -40,12 +39,13 @@ public class FacetsTest {
         assertEquals(Arrays.asList("business", "technology"), f.categories);
         assertEquals(Arrays.asList("en", "fr"), f.languages);
     }
-
-    /**
-     * Checks that the class handles empty lists correctly.
-     * All lists should be non-null and empty.
-     *
-     * @author Yang
+    
+    /** 
+     * @description:  Confirms that the class supports empty lists without errors.
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 12:51
      */
     @Test
     public void supportsEmptyLists() {
@@ -61,13 +61,13 @@ public class FacetsTest {
         assertTrue(f.categories.isEmpty());
         assertTrue(f.languages.isEmpty());
     }
-
-    /**
-     * Verifies current behavior when null lists are provided.
-     * The class does not perform null checks, so null references
-     * are stored directly as-is.
-     *
-     * @author Yang
+    
+    /** 
+     * @description:  Ensures that null lists are allowed and stored as null (current behavior).
+     * @param: 
+     * @return: void
+     * @author yang
+     * @date: 2025-10-30 12:51
      */
     @Test
     public void allowsNullLists_currentBehavior() {

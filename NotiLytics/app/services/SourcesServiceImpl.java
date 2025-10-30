@@ -17,13 +17,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-/*
- * @Author Yang
- * @Description
- * Service implementation for fetching NewsAPI sources.
- * Uses Play WS for HTTP calls, Caffeine for caching, and Streams for processing.
- * Provides filtered source listing and precomputed facets for dropdowns.
- * @Date 11:38 2025-10-28
+/** 
+ * @description: Implements NewsAPI source fetching using Play WS and Caffeine cache.
+ * @author yang
+ * @date: 2025-10-30 12:42
+ * @version 1.0
  */
 public class SourcesServiceImpl implements SourcesService {
 
@@ -37,14 +35,13 @@ public class SourcesServiceImpl implements SourcesService {
     private final long sourcesTtlSec;
 
     private final Cache<String, Facets> facetsCache;
-
-    /*
-     * @Author Yang
-     * @Description
-     * Constructor. Reads config, sets timeouts, and initializes caches.
-     * @Date 12:46 2025-10-28
-     * @Param ws      Play WS client
-     * @Param config  application configuration
+    
+    /** 
+     * @description: Initializes configuration, API parameters, timeouts, and in-memory caches.
+     * @param: ws;config
+     * @return: 
+     * @author yang
+     * @date: 2025-10-30 12:46
      */
     @Inject
     public SourcesServiceImpl(WSClient ws, Config config) {
@@ -59,16 +56,13 @@ public class SourcesServiceImpl implements SourcesService {
 
         this.facetsCache = Caffeine.newBuilder().expireAfterWrite(Duration.ofSeconds(sourcesTtlSec)).maximumSize(10).build();
     }
-
-    /*
-     * @Author Yang
-     * @Description
-     * Returns a filtered list of sources. Results are cached by (country|category|language).
-     * @Date 11:39 2025-10-28
-     * @Param country   optional country code (lowercase)
-     * @Param category  optional category
-     * @Param language  optional language code (lowercase)
-     * @return async list of SourceItem
+    
+    /** 
+     * @description:  Fetches filtered sources from NewsAPI, removes duplicates, sorts by name, and caches results.
+     * @param: country;category;language
+     * @return: CompletionStage<List<SourceItem>>
+     * @author yang
+     * @date: 2025-10-30 12:45
      */
     @Override
     public CompletionStage<List<SourceItem>> listSources(Optional<String> country, Optional<String> category, Optional<String> language) {
@@ -98,14 +92,13 @@ public class SourcesServiceImpl implements SourcesService {
             return processed;
         });
     }
-
-    /*
-     * @Author Yang
-     * @Description
-     * Computes distinct countries, categories, and languages from all sources.
-     * Cached separately to feed dropdown menus.
-     * @Date 11:39 2025-10-28
-     * @return async Facets containing three distinct option lists
+    
+    /** 
+     * @description:  Builds and caches distinct, sorted facet lists (countries, categories, languages) from all sources.
+     * @param: 
+     * @return: CompletionStage<Facets>
+     * @author yang
+     * @date: 2025-10-30 12:47
      */
     @Override
     public CompletionStage<Facets> getFacets() {
@@ -124,15 +117,13 @@ public class SourcesServiceImpl implements SourcesService {
             return f;
         });
     }
-
-    /*
-     * @Author Yang
-     * @Description
-     * Safely reads a text field from a JsonNode, returning null if absent.
-     * @Date 11:39 2025-10-28
-     * @Param node   source JSON node
-     * @Param field  field name
-     * @return String value or null
+    
+    /** 
+     * @description: Safely extracts a string field from a JsonNode; returns null if missing or null.
+     * @param: node;field
+     * @return: String
+     * @author yang
+     * @date: 2025-10-30 12:47
      */
     private static String text(JsonNode node, String field) {
         JsonNode v = node.get(field);
