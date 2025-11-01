@@ -2,29 +2,54 @@ package models;
 
 import java.util.Objects;
 
-/** 
- * @description: Represents a single news source with details such as ID, name, URL, category, language, and country.
- * @author yang
- * @date: 2025-10-30 12:48
+/**
+ * Represents a single news source with details such as
+ * ID, name, URL, category, language, and country.
+ *
+ * <p>This class is immutable and used to hold source metadata
+ * retrieved from the News API.</p>
+ *
+ * @author Yang
  * @version 1.0
+ * @since 2025-10-30
  */
 public class SourceItem {
+
+    /** Unique identifier of the news source. */
     public final String id;
+
+    /** Name of the news source. */
     public final String name;
+
+    /** Short description of the source. */
     public final String description;
+
+    /** Website URL of the source. */
     public final String url;
+
+    /** Category of the news source (e.g., business, sports). */
     public final String category;
+
+    /** Language code of the news source (ISO 639-1). */
     public final String language;
+
+    /** Country code of the news source (ISO 3166-1 alpha-2). */
     public final String country;
-    
-    /** 
-     * @description: Initializes a SourceItem with all basic information about a news source.
-     * @param: id;name;description;url;category;language;country
-     * @return: 
-     * @author yang
-     * @date: 2025-10-30 12:48
+
+    /**
+     * Creates a new {@code SourceItem} with the specified attributes.
+     *
+     * @param id unique identifier of the source
+     * @param name source name
+     * @param description short description
+     * @param url source website URL
+     * @param category source category
+     * @param language source language code
+     * @param country source country code
+     * @author Yang
      */
-    public SourceItem(String id, String name, String description, String url, String category, String language, String country) {
+    public SourceItem(String id, String name, String description, String url,
+                      String category, String language, String country) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -35,11 +60,11 @@ public class SourceItem {
     }
 
     /**
-     * @description:  Compares two SourceItem objects based on their ID or URL for equality.
-     * @param: o
-     * @return: boolean
-     * @author yang
-     * @date: 2025-10-30 12:49
+     * Checks equality based on ID or URL.
+     *
+     * @param o other object to compare
+     * @return {@code true} if both represent the same source; {@code false} otherwise
+     * @author Yang
      */
     @Override
     public boolean equals(Object o) {
@@ -52,11 +77,10 @@ public class SourceItem {
     }
 
     /**
-     * @description:  Generates a hash code based on the ID or URL to ensure consistent behavior with equals().
-     * @param:
-     * @return: int
-     * @author yang
-     * @date: 2025-10-30 12:49
+     * Computes hash code consistent with {@link #equals(Object)}.
+     *
+     * @return hash code derived from ID or URL
+     * @author Yang
      */
     @Override
     public int hashCode() {

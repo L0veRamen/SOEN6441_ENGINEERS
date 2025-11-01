@@ -11,15 +11,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-/*
- * SentimentAnalysisService.java
- *
- * Provides sentiment analysis utilities for news articles and word lists.
- * Supports multilingual positive and negative word detection, and calculates sentiment using the Sentiment enum.
- *
- * Author: Ruochen Qiao
- */
 
+/**
+ * Provides sentiment analysis utilities for news articles and word lists.
+ *
+ * <p>This service supports multilingual positive and negative word detection,
+ * and determines sentiment levels using the {@link Sentiment} enumeration.</p>
+ *
+ * @author Ruochen Qiao
+ * @version 1.0
+ * @since 2025-11-01
+ */
 @Singleton
 public class SentimentAnalysisService {
     private static final Logger log = LoggerFactory.getLogger(SentimentAnalysisService.class);
@@ -97,6 +99,23 @@ public class SentimentAnalysisService {
             "so disappointed", "feeling down", "in pain", "so sad", "this sucks"
     ));
 
+    /**
+     * Creates a new {@code SentimentAnalysisService} instance.
+     *
+     * <p>This default constructor is invoked automatically by the dependency
+     * injection framework (e.g., Guice or Play) when a singleton instance
+     * of this service is required.</p>
+     */
+    public SentimentAnalysisService() {
+        // Default constructor for DI
+    }
+
+    /**
+     * Analyzes a list of words and determines the overall sentiment.
+     *
+     * @param wordList list of words to analyze
+     * @return the detected {@link Sentiment}
+     */
     public static Sentiment analyzeWordList(List<String> wordList) {
         if (wordList == null || wordList.isEmpty()) {
 //            log.debug("Word list is null or empty");
@@ -132,6 +151,12 @@ public class SentimentAnalysisService {
         return Sentiment.fromScores(positiveRatio, negativeRatio);
     }
 
+    /**
+     * Performs sentiment analysis on a list of {@link Article} objects.
+     *
+     * @param articles list of articles to analyze
+     * @return overall {@link Sentiment} classification
+     */
     public static Sentiment analyzeArticles(List<Article> articles) {
         if (articles == null || articles.isEmpty()) {
             return Sentiment.NEUTRAL;

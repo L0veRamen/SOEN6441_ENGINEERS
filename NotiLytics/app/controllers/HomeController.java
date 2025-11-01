@@ -1,22 +1,5 @@
 package controllers;
 
-/**
- * Single unified controller for the NotiLytics application.
- * This controller handles all HTTP requests including:
- * - Home page display with search history
- * - Search operations
- * - Source profile display
- *
- * Responsibilities:
- * - Render home page with search history
- * - Handle search requests and manage session
- * - Display source profile pages
- * - Extract and manage session IDs from Play session
- * - NO business logic (thin controller - delegates to services)
- *
- * @author Group
- */
-
 import models.SearchBlock;
 import models.SourceProfile;
 import org.slf4j.Logger;
@@ -33,6 +16,22 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+
+/**
+ * Single unified controller for the NotiLytics application.
+ *
+ * <p>Responsibilities:</p>
+ * <ul>
+ *   <li>Render home page with search history</li>
+ *   <li>Handle search requests (POST-Redirect-GET)</li>
+ *   <li>Display source profiles and word statistics</li>
+ *   <li>Manage session ID (no business logic in controller)</li>
+ * </ul>
+ *
+ * @author group
+ * @since 2025-11-01 14:14
+ * @version 1.0
+ */
 @Singleton
 public class HomeController extends Controller {
 
@@ -191,13 +190,22 @@ public class HomeController extends Controller {
             return ok(views.html.profile.render(res.source(), res.articles()));
         });
     }
-    
-    /** 
-     * @description: Handles the /sources request by fetching available filters and filtered news sources, then renders the sources page.   
-     * @param: request;country;category;language
-     * @return: CompletionStage<Result>
+
+    /**
+     * Handles the `/sources` request by fetching available filters and filtered news sources,
+     * then renders the sources page.
+     *
+     * <p>This method calls {@link services.SourcesService#getFacets()} to retrieve filter
+     * options (countries, categories, languages), and {@link services.SourcesService#listSources(Optional, Optional, Optional)}
+     * to fetch the filtered news source list.</p>
+     *
+     * @param request  the current HTTP request
+     * @param country  optional country filter (ISO code, e.g., "us", "ca")
+     * @param category optional category filter (e.g., "business", "sports")
+     * @param language optional language filter (ISO code, e.g., "en", "fr")
+     * @return a {@link java.util.concurrent.CompletionStage} that completes with the rendered sources view
+     * @since 2025-10-30
      * @author yang
-     * @date: 2025-10-30 12:59
      */
     public CompletionStage<Result> sources(Http.Request request,
                                            String country,

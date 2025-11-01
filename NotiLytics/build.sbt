@@ -100,3 +100,34 @@ run / javaOptions ++= Seq(
   "-Xmx2048M",
   "-Dconfig.file=conf/application.conf"
 )
+
+lazy val generateJavadoc = taskKey[Unit]("Generate Javadoc")
+
+generateJavadoc := {
+  val log = streams.value.log
+  val cp = (Compile / dependencyClasspath).value.files.mkString(":")
+  val sourcePath = (Compile / javaSource).value
+  val outDir = target.value / "javadoc"
+
+  log.info("Generating Javadoc...")
+
+  val javadocCmd = Seq(
+    "javadoc",
+    "-protected",
+    "-splitindex",
+    "-d", outDir.getAbsolutePath,
+    "-sourcepath", sourcePath.getAbsolutePath,
+    "-classpath", cp,
+    "-subpackages", "models:controllers:services:modules",
+    "-Xdoclint:none"
+  )
+
+  import scala.sys.process._
+  val result = javadocCmd.!
+
+  if (result == 0) {
+    log.info("Javadoc generated successfully in ${outDir.getAbsolutePath}")
+  } else {
+    log.error("Javadoc generation failed !!!")
+  }
+}
