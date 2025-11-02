@@ -1,19 +1,39 @@
 package models;
-/*
- * Sentiment.java
+
+/**
+ * Represents the sentiment classification for news analysis.
  *
- * Defines an enumeration for news sentiment analysis, including POSITIVE, NEGATIVE, and NEUTRAL.
- * Provides a static method fromScores to determine sentiment based on happiness and sadness scores,
- * and a getDescription method to return a symbolic representation of the sentiment.
+ * <p>This enumeration defines three types of sentiments:
+ * <ul>
+ *     <li>{@link #POSITIVE} — content expresses positive tone.</li>
+ *     <li>{@link #NEGATIVE} — content expresses negative tone.</li>
+ *     <li>{@link #NEUTRAL} — content expresses neutral or mixed tone.</li>
+ * </ul>
+ * Includes helper methods to determine sentiment from numeric scores
+ * and to retrieve an emoji representation.</p>
  *
  * @author Ruochen Qiao
+ * @version 1.0
+ * @since 2025-11-01
  */
-
 public enum Sentiment {
+
+    /** Represents a positive sentiment. */
     POSITIVE,
+
+    /** Represents a negative sentiment. */
     NEGATIVE,
+
+    /** Represents a neutral sentiment. */
     NEUTRAL;
 
+    /**
+     * Determines the sentiment based on given happiness and sadness scores.
+     *
+     * @param happiness happiness score (range 0–1)
+     * @param sadness sadness score (range 0–1)
+     * @return the corresponding {@code Sentiment} value
+     */
     public static Sentiment fromScores(double happiness, double sadness) {
         if (happiness > 0.6) {
             return POSITIVE;
@@ -24,6 +44,11 @@ public enum Sentiment {
         }
     }
 
+    /**
+     * Returns an emoji representing this sentiment.
+     *
+     * @return an emoji string corresponding to the sentiment
+     */
     public String getDescription() {
         return switch (this) {
             case POSITIVE -> "😊";
