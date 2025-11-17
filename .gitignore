@@ -7,6 +7,8 @@ resource-files/
 script-files/
 services/
 target/
+.metals/
+.vscode/
 
 # Compiled class file
 *.class
