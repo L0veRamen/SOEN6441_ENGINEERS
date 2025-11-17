@@ -7,12 +7,346 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>NotiLytics - News Search & Analysis</title>
         <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
+        <style>
+                /* D2: WebSocket-specific styles */
+                .websocket-section {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 2rem;
+                    border-radius: 10px;
+                    margin-bottom: 2rem;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                }
+
+                .websocket-section h2 {
+                    margin: 0 0 1rem 0;
+                    font-size: 1.8rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+
+                .status-indicator {
+                    display: inline-block;
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 50%;
+                    animation: pulse 2s infinite;
+                }
+
+                .status-connecting {
+                    background-color: #ffc107;
+                }
+
+                .status-connected {
+                    background-color: #4caf50;
+                }
+
+                .status-disconnected {
+                    background-color: #9e9e9e;
+                }
+
+                .status-error {
+                    background-color: #f44336;
+                }
+
+                .status-searching {
+                    background-color: #2196f3;
+                }
+
+                @@keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                }
+
+                .ws-controls {
+                    display: flex;
+                    gap: 1rem;
+                    margin-top: 1rem;
+                    flex-wrap: wrap;
+                }
+
+                .ws-controls input,
+                .ws-controls select {
+                    flex: 1;
+                    min-width: 200px;
+                    padding: 0.75rem;
+                    border: 2px solid rgba(255, 255, 255, 0.3);
+                    border-radius: 5px;
+                    background: rgba(255, 255, 255, 0.9);
+                    font-size: 1rem;
+                }
+
+                .ws-controls button {
+                    padding: 0.75rem 1.5rem;
+                    border: none;
+                    border-radius: 5px;
+                    font-size: 1rem;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                }
+
+                .ws-controls button:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+
+                #start-search-btn {
+                    background: #4caf50;
+                    color: white;
+                }
+
+                #start-search-btn:hover:not(:disabled) {
+                    background: #45a049;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                }
+
+                #stop-search-btn {
+                    background: #f44336;
+                    color: white;
+                }
+
+                #stop-search-btn:hover:not(:disabled) {
+                    background: #da190b;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                }
+
+                .live-results-container {
+                    display: none;
+                    margin-top: 2rem;
+                }
+
+                .live-results-container.show {
+                    display: block;
+                }
+
+                .search-info {
+                    background: #f5f5f5;
+                    padding: 1rem;
+                    border-radius: 5px;
+                    margin-bottom: 1rem;
+                }
+
+                .search-info h3 {
+                    margin: 0 0 0.5rem 0;
+                    color: #333;
+                }
+
+                .search-meta {
+                    display: flex;
+                    gap: 1rem;
+                    flex-wrap: wrap;
+                    font-size: 0.9rem;
+                    color: #666;
+                }
+
+                .articles-container {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+
+                .new-article {
+                    animation: slideIn 0.5s ease-out;
+                    border-left: 4px solid #4caf50;
+                }
+
+                .new-badge {
+                    display: inline-block;
+                    background: #4caf50;
+                    color: white;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 3px;
+                    font-size: 0.75rem;
+                    font-weight: bold;
+                    margin-bottom: 0.5rem;
+                }
+
+                @@keyframes slideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateX(-20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(0);
+                    }
+                }
+
+                .task-panels {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 1rem;
+                    margin-top: 2rem;
+                }
+
+                .task-panel {
+                    background: white;
+                    border: 1px solid #ddd;
+                    border-radius: 5px;
+                    padding: 1rem;
+                    display: none;
+                }
+
+                .task-panel h4 {
+                    margin: 0 0 1rem 0;
+                    color: #667eea;
+                    font-size: 1.2rem;
+                }
+
+                .task-result-content {
+                    font-size: 0.9rem;
+                    line-height: 1.6;
+                }
+
+                .task-result-content p {
+                    margin: 0.5rem 0;
+                }
+
+                .task-result-content ul {
+                    margin: 0.5rem 0;
+                    padding-left: 1.5rem;
+                }
+
+                .notification {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #4caf50;
+                    color: white;
+                    padding: 1rem 1.5rem;
+                    border-radius: 5px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+                    opacity: 0;
+                    transform: translateY(-20px);
+                    transition: all 0.3s;
+                    z-index: 1000;
+                }
+
+                .notification.show {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+
+                .divider {
+                    margin: 3rem 0;
+                    border: none;
+                    border-top: 2px solid #e0e0e0;
+                }
+
+                /* Responsive design */
+                @@media (max-width: 768px) {
+                .ws-controls {
+                    flex-direction: column;
+                }
+
+                .ws-controls input,
+                .ws-controls select,
+                .ws-controls button {
+                    width: 100%;
+                    min-width: 0;
+                }
+
+                .task-panels {
+                    grid-template-columns: 1fr;
+                }
+
+                /* Readability panel refinements */
+                #readability-panel {
+                    font-size: 0.9rem;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+                }
+
+                #readability-panel h4 {
+                    font-size: 1.05rem;
+                    margin-bottom: 0.5rem;
+                    color: #374151;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.4rem;
+                }
+
+                #readability-summary .task-result-content p {
+                    margin: 0.25rem 0;
+                }
+
+                #readability-summary .metric-footnote {
+                    margin-top: 0.35rem;
+                    font-size: 0.8rem;
+                    color: #6b7280;
+                }
+
+                /* Per-article area */
+                .readability-articles {
+                    margin-top: 0.75rem;
+                    padding-top: 0.75rem;
+                    border-top: 1px solid #e5e7eb;
+                }
+
+                .readability-articles h5 {
+                    margin: 0 0 0.35rem 0;
+                    font-size: 0.9rem;
+                    color: #4b5563;
+                    font-weight: 600;
+                }
+
+                /* New compact row layout */
+                .readability-article-list {
+                    margin: 0;
+                    padding: 0;
+                }
+
+                .readability-row {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 0.4rem;
+                    font-size: 0.8rem;      /* smaller text to fit */
+                    line-height: 1.35;
+                    margin-bottom: 0.35rem;
+                }
+
+                .readability-row-index {
+                    flex: 0 0 auto;
+                    font-weight: 600;
+                    color: #6b7280;
+                    min-width: 1.5rem;
+                    text-align: right;
+                }
+
+                .readability-row-main {
+                    flex: 1;
+                }
+
+                .readability-item-title {
+                    font-weight: 500;
+                    color: #111827;
+                }
+
+                .readability-item-meta {
+                    font-size: 0.78rem;
+                    color: #4b5563;
+                }
+
+                .readability-item-meta .readability-interpretation {
+                    font-style: italic;
+                    margin-left: 0.25rem;
+                    color: #6b7280;
+                }
+
+
+
+                }
+        </style>
     </head>
     <body>
         <header>
             <div class="container">
                 <h1>📰 NotiLytics</h1>
-                <p class="subtitle">Search and analyze news articles from around the world</p>
+                <p class="subtitle">Search and analyze news articles from around the world - Now with Live Updates !</p>
                     <!-- News sources -->
                 <div class="header-actions">
                     <a href="@routes.HomeController.sources()" class="btn-primary btn-with-icon">
@@ -25,31 +359,76 @@
         </header>
 
         <div class="container">
-                <!-- Search Form -->
-            <div class="search-form">
-                <form action="/notilytics" method="GET">
-                    <div class="form-group">
-                        <label for="query">Search Query</label>
-                        <input type="text"
-                        id="query"
-                        name="q"
-                        placeholder="Enter keywords to search for news..."
-                        required
-                        minlength="1"
-                        autofocus>
+                <!-- D2: WebSocket Live Search Section -->
+            <div class="websocket-section">
+                <h2>
+                    <span>💡</span>
+                    Live News Search
+                    <span class="status-indicator" id="ws-status"></span>
+                    <span id="ws-status-text" style="font-size: 0.8rem; margin-left: 0.5rem;">Initializing...</span>
+                </h2>
+                <p style="margin: 0.5rem 0 1rem 0; opacity: 0.9;">
+                    Start a live search and receive real-time updates every 30 seconds as new articles are published.
+                </p>
+
+                <div class="ws-controls">
+                    <input
+                    type="text"
+                    id="ws-query"
+                    placeholder="Enter keywords for live search..."
+                    disabled
+                    autofocus>
+
+                    <select id="ws-sortBy" disabled>
+                        <option value="publishedAt" selected>Published Date (Newest First)</option>
+                        <option value="relevancy">Relevancy</option>
+                        <option value="popularity">Popularity</option>
+                    </select>
+
+                    <button id="start-search-btn" disabled>Start Live Search</button>
+
+                    <button id="stop-search-btn" disabled>Stop Search</button>
+                </div>
+            </div>
+
+                <!-- D2: Live Results Display -->
+            <div id="live-results" class="live-results-container">
+                <div id="search-info" class="search-info">
+                        <!-- Search metadata will be inserted here -->
+                </div>
+
+                <div id="articles-container" class="articles-container">
+                        <!-- Articles will be appended here -->
+                </div>
+
+                    <!-- D2: Individual Task Results Panels -->
+                <div class="task-panels">
+                    <div id="readability-panel" class="task-panel">
+                            <!-- Readability results will be inserted here -->
+                        <h4>📖 Readability Analysis</h4>
+                        <div id="readability-summary" class="metric-body">
+                            <p class="placeholder">Run a search to see readability scores.</p>
+                        </div>
+                            <!-- Per-article breakdown will be injected here -->
+                        <div id="readability-articles"></div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="sortBy">Sort By</label>
-                        <select id="sortBy" name="sortBy">
-                            <option value="publishedAt" selected>Published Date (Newest First)</option>
-                            <option value="relevancy">Relevancy</option>
-                            <option value="popularity">Popularity</option>
-                        </select>
+                    <div id="sentiment-panel" class="task-panel">
+                            <!-- Sentiment results will be inserted here -->
                     </div>
 
-                    <button type="submit">🔍 Search News</button>
-                </form>
+                    <div id="source-profile-panel" class="task-panel">
+                            <!-- Source profile results will be inserted here -->
+                    </div>
+
+                    <div id="word-stats-panel" class="task-panel">
+                            <!-- Word stats results will be inserted here -->
+                    </div>
+
+                    <div id="sources-panel" class="task-panel">
+                            <!-- Sources results will be inserted here -->
+                    </div>
+                </div>
             </div>
 
                 <!-- Search History -->
@@ -63,9 +442,9 @@
                         <div class="search-block">
                             <div class="search-block-header">
                                 <h3>@block.query()
-                                    <a href="/wordstats?q=@block.query()" class="badge badge-info" style="text-decoration: none; margin-left: 10px;">
+                                <a href="/wordstats?q=@block.query()" class="badge badge-info" style="text-decoration: none; margin-left: 10px;">
                                         Word Stats
-                                    </a>
+                                </a>
                                 </h3>
                                 <div class="search-meta">
                                     <span>📊 <strong>@block.totalResults()</strong> total results</span>
@@ -145,19 +524,12 @@
                 </div>
             } else {
                 <div class="no-results">
-                    <p>👋 Welcome! Enter a search query above to get started.</p>
+                    <p>👋 Welcome! Use the live search above or the traditional search form to get started.</p>
                 </div>
             }
         </div>
 
-        <script>
-                // Auto-focus search input on page load
-                document.addEventListener('DOMContentLoaded', function() {
-                    var queryInput = document.getElementById('query');
-                    if (queryInput) {
-                        queryInput.focus();
-                    }
-                });
-        </script>
+@*        !-- D2: WebSocket Client JavaScript -->*@
+        <script src="@routes.Assets.versioned("javascripts/websocket-client.js")"></script>
     </body>
 </html>

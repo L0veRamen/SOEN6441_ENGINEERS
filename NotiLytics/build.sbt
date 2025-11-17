@@ -16,15 +16,22 @@ javacOptions ++= Seq(
 libraryDependencies += guice
 libraryDependencies += ws
 
+// ==================== PEKKO ACTORS (D2 NEW) ====================
+libraryDependencies += "org.apache.pekko" %% "pekko-actor-typed" % "1.0.1"
+libraryDependencies += "org.apache.pekko" %% "pekko-stream" % "1.0.1"
+libraryDependencies += "org.apache.pekko" %% "pekko-slf4j" % "1.0.1"
+
 // JUnit 4
 libraryDependencies += "junit" % "junit" % "4.13.2" % Test
 
 // Add JUnit 4 runner
 libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.2" % Test
 
+// Pekko TestKit (D2 NEW)
+libraryDependencies += "org.apache.pekko" %% "pekko-testkit" % "1.0.1" % Test
+
 // Caffeine Cache for session and data caching
 libraryDependencies += "com.github.ben-manes.caffeine" % "caffeine" % "3.1.8"
-
 
 // Mockito for mocking dependencies
 libraryDependencies += "org.mockito" % "mockito-core" % "5.14.2" % Test

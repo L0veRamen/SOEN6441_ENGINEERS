@@ -1,0 +1,163 @@
+@(searchHistory: java.util.List[models.SearchBlock], request: play.mvc.Http.Request)
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>NotiLytics - News Search & Analysis</title>
+        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
+    </head>
+    <body>
+        <header>
+            <div class="container">
+                <h1>📰 NotiLytics</h1>
+                <p class="subtitle">Search and analyze news articles from around the world</p>
+                    <!-- News sources -->
+                <div class="header-actions">
+                    <a href="@routes.HomeController.sources()" class="btn-primary btn-with-icon">
+                        <span class="icon">🌐</span>
+                        <span>View Sources</span>
+                    </a>
+                </div>
+
+            </div>
+        </header>
+
+        <div class="container">
+                <!-- Search Form -->
+            <div class="search-form">
+                <form action="/notilytics" method="GET">
+                    <div class="form-group">
+                        <label for="query">Search Query</label>
+                        <input type="text"
+                        id="query"
+                        name="q"
+                        placeholder="Enter keywords to search for news..."
+                        required
+                        minlength="1"
+                        autofocus>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sortBy">Sort By</label>
+                        <select id="sortBy" name="sortBy">
+                            <option value="publishedAt" selected>Published Date (Newest First)</option>
+                            <option value="relevancy">Relevancy</option>
+                            <option value="popularity">Popularity</option>
+                        </select>
+                    </div>
+
+                    <button type="submit">🔍 Search News</button>
+                </form>
+            </div>
+
+                <!-- Search History -->
+            @if(searchHistory != null && !searchHistory.isEmpty()) {
+                <div class="search-history">
+                    <h2>Search History
+                        <span class="badge badge-info">@searchHistory.size() @if(searchHistory.size() == 1) {search} else {searches}</span>
+                    </h2>
+
+                    @for(block <- searchHistory) {
+                        <div class="search-block">
+                            <div class="search-block-header">
+                                <h3>@block.query()
+                                    <a href="/wordstats?q=@block.query()" class="badge badge-info" style="text-decoration: none; margin-left: 10px;">
+                                        Word Stats
+                                    </a>
+                                </h3>
+                                <div class="search-meta">
+                                    <span>📊 <strong>@block.totalResults()</strong> total results</span>
+                                    <span>🔄 Sorted by: <strong>@block.sortBy()</strong></span>
+                                    <span>🕒 @block.createdAtIso()</span>
+                                    @* ============================================ *@
+                                    @* TASK E: Display Average Readability Scores  *@
+                                    @* ============================================ *@
+                                    @if(block.readability() != null && block.readability().isValid()) {
+                                        <span class="readability-badge">
+                                            📖 <strong>Readability:</strong>
+                                            Grade Level: <strong>@{
+                                            String.format("%.1f", block.readability().gradeLevel())
+                                        }</strong> |
+                                            Reading Ease: <strong>@{
+                                            String.format("%.1f", block.readability().readingEase())
+                                        }</strong>
+                                            <span class="readability-interpretation">
+                                                (@block.readability().getReadingEaseInterpretation())</span>
+                                        </span>
+                                    }
+                                    @if(block.articleSentiment() != null) {
+                                        <span>
+                                            | 💬 Overall Sentiment: <strong>@block.articleSentiment().getDescription()</strong>
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+
+                            @if(block.articles() != null && !block.articles().isEmpty()) {
+                                @for((article, idx) <- block.articles().zipWithIndex) {
+                                    <div class="article">
+                                        <div class="article-title">
+                                        @if(article.hasUrl()) {
+                                            <a href="@article.url()" target="_blank" rel="noopener noreferrer">
+                                            @article.title()
+                                            </a>
+                                        } else {
+                                            @article.title()
+                                        }
+                                        </div>
+
+                                        <div class="article-meta">
+                                            @if(article.hasSource()) {
+                                                Source: <a href="@routes.HomeController.source(article.getSourceId)">@article.getSourceDisplayName()</a>
+                                            }
+                                            @if(article.publishedAt() != null && !article.publishedAt().isEmpty()) {
+                                                | Published: @article.publishedAt()
+                                            }
+                                            @* OPTIONAL: Individual article readability *@
+                                            @if(block.articleReadability() != null && idx < block.articleReadability().size()) {
+                                                @defining(block.articleReadability().get(idx)) { scores =>
+                                                    @if(scores.isValid()) {
+                                                        <span class="article-readability-inline">
+                                                            | 📚 Grade: <strong>@{String.format("%.1f", scores.gradeLevel())}</strong>
+                                                            Ease: <strong>@{String.format("%.1f", scores.readingEase())}</strong>
+                                                        </span>
+                                                    }
+                                                }
+                                            }
+                                        </div>
+
+                                        @if(article.description() != null && !article.description().isEmpty()) {
+                                            <div class="article-description">
+                                            @article.description()
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            } else {
+                                <div class="no-results">
+                                    No articles found for this search.
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            } else {
+                <div class="no-results">
+                    <p>👋 Welcome! Enter a search query above to get started.</p>
+                </div>
+            }
+        </div>
+
+        <script>
+                // Auto-focus search input on page load
+                document.addEventListener('DOMContentLoaded', function() {
+                    var queryInput = document.getElementById('query');
+                    if (queryInput) {
+                        queryInput.focus();
+                    }
+                });
+        </script>
+    </body>
+</html>
