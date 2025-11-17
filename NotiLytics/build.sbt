@@ -17,9 +17,10 @@ libraryDependencies += guice
 libraryDependencies += ws
 
 // ==================== PEKKO ACTORS (D2 NEW) ====================
-libraryDependencies += "org.apache.pekko" %% "pekko-actor-typed" % "1.0.1"
-libraryDependencies += "org.apache.pekko" %% "pekko-stream" % "1.0.1"
-libraryDependencies += "org.apache.pekko" %% "pekko-slf4j" % "1.0.1"
+lazy val pekkoVersion = "1.0.3"
+libraryDependencies += "org.apache.pekko" %% "pekko-actor-typed" % pekkoVersion
+libraryDependencies += "org.apache.pekko" %% "pekko-stream" % pekkoVersion
+libraryDependencies += "org.apache.pekko" %% "pekko-slf4j" % pekkoVersion
 
 // JUnit 4
 libraryDependencies += "junit" % "junit" % "4.13.2" % Test
@@ -28,7 +29,7 @@ libraryDependencies += "junit" % "junit" % "4.13.2" % Test
 libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.2" % Test
 
 // Pekko TestKit (D2 NEW)
-libraryDependencies += "org.apache.pekko" %% "pekko-testkit" % "1.0.1" % Test
+libraryDependencies += "org.apache.pekko" %% "pekko-testkit" % pekkoVersion % Test
 
 // Caffeine Cache for session and data caching
 libraryDependencies += "com.github.ben-manes.caffeine" % "caffeine" % "3.1.8"

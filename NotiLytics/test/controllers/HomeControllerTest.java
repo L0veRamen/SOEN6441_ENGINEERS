@@ -1,7 +1,12 @@
 package controllers;
 
 import models.*;
+import org.apache.pekko.actor.ActorSystem;
+import org.apache.pekko.stream.Materializer;
+import org.apache.pekko.stream.SystemMaterializer;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -9,12 +14,14 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import play.mvc.Http;
 import play.mvc.Result;
+import play.mvc.WebSocket;
 import services.*;
 import services.ProfileService.SourceProfileResult;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -39,6 +46,9 @@ import static play.test.Helpers.contentAsString;
 @RunWith(MockitoJUnitRunner.class)
 public class HomeControllerTest {
 
+    private static ActorSystem actorSystem;
+    private static Materializer materializer;
+
     @Mock
     private SearchHistoryService historyService;
 
@@ -54,9 +64,29 @@ public class HomeControllerTest {
     @Mock
     private SourcesService sourcesService;
 
+    @Mock
+    private NewsApiClient newsApiClient;
+
+    @Mock
+    private ReadabilityService readabilityService;
+
     private HomeController controller;
     private SearchBlock sampleBlock;
     private WordStats sampleWordStats;
+
+    @BeforeClass
+    public static void initActorInfra() {
+        actorSystem = ActorSystem.create("home-controller-test");
+        materializer = SystemMaterializer.get(actorSystem).materializer();
+    }
+
+    @AfterClass
+    public static void shutdownActorInfra() throws Exception {
+        if (actorSystem != null) {
+            actorSystem.terminate();
+            actorSystem.getWhenTerminated().toCompletableFuture().get(5, TimeUnit.SECONDS);
+        }
+    }
 
     /**
      * Set up test fixtures before each test
@@ -66,7 +96,17 @@ public class HomeControllerTest {
      */
     @Before
     public void setUp() {
-        controller = new HomeController(searchService, historyService, profileService, wordStatsService, sourcesService);
+        controller = new HomeController(
+                actorSystem,
+                materializer,
+                searchService,
+                historyService,
+                profileService,
+                wordStatsService,
+                sourcesService,
+                newsApiClient,
+                readabilityService
+        );
         sampleBlock = new SearchBlock(
                 "java",
                 "publishedAt",
@@ -196,7 +236,7 @@ public class HomeControllerTest {
      * @author Zi Lun Li
      */
 	 @Test
-	 public void wordStatsHandlesErrorTest() throws Exception {
+    public void wordStatsHandlesErrorTest() throws Exception {
         CompletableFuture<WordStats> error = new CompletableFuture<>();
         error.completeExceptionally(new RuntimeException("Error"));
         when(wordStatsService.computeWordStats(anyString())).thenReturn(error);
@@ -867,5 +907,11 @@ public class HomeControllerTest {
         assertEquals(OK, result.status());
         verify(sourcesService).getFacets();
         verify(sourcesService).listSources(eq(Optional.of("us")), eq(Optional.empty()), eq(Optional.empty()));
+    }
+
+    @Test
+    public void socketEndpointCreatesWebSocket() {
+        WebSocket socket = controller.socket();
+        assertNotNull(socket);
     }
 }
