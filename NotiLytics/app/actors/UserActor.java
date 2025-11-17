@@ -304,6 +304,7 @@ public class UserActor extends AbstractActor {
      * - start_search: Begin new search with query
      * - stop_search: Stop current search
      * - ping: Keep-alive
+     * - get_history: Retrieve search history for this session
      *
      * @param message JSON message from the client
      * @author Group Members
@@ -325,6 +326,7 @@ public class UserActor extends AbstractActor {
                 }
                 case "stop_search" -> stopCurrentSearch();
                 case "ping" -> sendPong();
+                case "get_history" -> sendHistory();
                 default -> {
                     log.warn("Unknown message type: {} for session: {}",
                             type, sessionId);
@@ -685,6 +687,23 @@ public class UserActor extends AbstractActor {
         sendToWebSocket("pong", Map.of());
     }
 
+    /**
+     * Send search history to the client
+     * Returns all searches in this session (max 10, newest first)
+     *
+     * @author Group Members
+     */
+    private void sendHistory() {
+        log.info("Sending search history to session {}: {} searches",
+                sessionId, searchHistory.size());
+
+        sendToWebSocket("history", Map.of(
+                "searches", searchHistory,
+                "count", searchHistory.size(),
+                "maxHistory", MAX_HISTORY
+        ));
+    }
+    
     // ========== INNER CLASSES ==========
 
     /**

@@ -68,7 +68,13 @@
             sentimentPanel: document.getElementById('sentiment-panel'),
             sourceProfilePanel: document.getElementById('source-profile-panel'),
             wordStatsPanel: document.getElementById('word-stats-panel'),
-            sourcesPanel: document.getElementById('sources-panel')
+            sourcesPanel: document.getElementById('sources-panel'),
+
+            // Add this where the other event listeners are set up
+            History: document.getElementById('refresh-history-btn')?.addEventListener('click', function() {
+                console.log('[History] Manual refresh requested');
+                getHistory(false); // false = show loading indicator
+            })
         };
     }
 
@@ -108,6 +114,11 @@
 
         // Enable controls
         enableControls();
+
+        // AUTO-REQUEST HISTORY ON CONNECT
+        setTimeout(() => {
+            getHistory();
+        }, 500); // Small delay to ensure the actor is ready
     }
 
     /**
@@ -136,6 +147,9 @@
                 case 'pong':
                     console.log('[WebSocket] Pong received');
                     break;
+                case 'history':  // ← NEW CASE
+                    handleHistory(message.data);
+                    break;
                 // Individual task results
                 case 'readability':
                     handleReadabilityResult(message.data);
@@ -159,6 +173,104 @@
             console.error('[WebSocket] Failed to parse message:', error);
         }
     }
+
+    /**
+     * Request search history from server
+     * @param {boolean} silent - If true, don't show loading indicator
+     * @author Group Members
+     */
+    function getHistory(silent = false) {
+        if (!isConnected) {
+            console.warn('[WebSocket] Cannot get history - not connected');
+            return;
+        }
+
+        console.log('[WebSocket] Requesting search history');
+
+        // Show loading indicator (unless silent)
+        const historyContainer = document.getElementById('history-container');
+        if (!silent && historyContainer && historyContainer.children.length > 0) {
+            historyContainer.style.opacity = '0.6';
+        }
+
+        const message = {
+            type: 'get_history'
+        };
+
+        ws.send(JSON.stringify(message));
+    }
+
+    /**
+     * Handle search history response
+     * @param {Object} data History data
+     * @author Group Members
+     */
+    function handleHistory(data) {
+        console.log('[History] Received history:', data.count, 'searches');
+
+        const historyContainer = document.getElementById('history-container');
+        if (!historyContainer) {
+            console.warn('[History] No history container found');
+            return;
+        }
+
+        // Restore opacity (remove loading effect)
+        historyContainer.style.opacity = '1';
+        historyContainer.style.transition = 'opacity 0.3s';
+
+        // Clear existing history
+        historyContainer.innerHTML = '';
+
+        if (data.count === 0) {
+            historyContainer.innerHTML = '<p class="no-history">No search history yet</p>';
+            return;
+        }
+
+        // Create the history list
+        const historyList = document.createElement('div');
+        historyList.className = 'history-list';
+
+        data.searches.forEach((search, index) => {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+
+            historyItem.innerHTML = `
+            <div class="history-header">
+                <span class="history-query">${escapeHtml(search.query)}</span>
+                <span class="history-count">${search.totalResults} results</span>
+            </div>
+            <div class="history-meta">
+                <span>Sort: ${escapeHtml(search.sortBy)}</span>
+                <span>Time: ${new Date(search.createdAtIso).toLocaleString()}</span>
+            </div>
+            <button class="history-replay" data-query="${escapeHtml(search.query)}" 
+                    data-sortby="${escapeHtml(search.sortBy)}">
+                Replay Search
+            </button>
+        `;
+
+            historyList.appendChild(historyItem);
+        });
+
+        historyContainer.appendChild(historyList);
+
+        // Add event listeners to replay buttons
+        historyContainer.querySelectorAll('.history-replay').forEach(button => {
+            button.addEventListener('click', function() {
+                const query = this.getAttribute('data-query');
+                const sortBy = this.getAttribute('data-sortby');
+
+                // Set form values
+                if (elements.queryInput) elements.queryInput.value = query;
+                if (elements.sortBySelect) elements.sortBySelect.value = sortBy;
+
+                // Start search
+                startSearch();
+            });
+        });
+    }
+
+
 
     /**
      * Handle WebSocket error
@@ -221,6 +333,12 @@
 
         // Show the result container
         elements.resultsContainer.style.display = 'block';
+
+        // AUTO-REFRESH HISTORY AFTER SEARCH COMPLETES
+        console.log('[History] Auto-refreshing history after search completion');
+        setTimeout(() => {
+            getHistory();
+        }, 500); // Small delay to ensure backend has processed
 
         // Let the separate task messages populate panels,
         // but we can also bootstrap readability using the initial payload.

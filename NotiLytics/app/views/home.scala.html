@@ -336,6 +336,15 @@
                     margin-left: 0.25rem;
                     color: #6b7280;
                 }
+                @@keyframes fadeIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
 
 
 
@@ -390,7 +399,18 @@
                     <button id="stop-search-btn" disabled>Stop Search</button>
                 </div>
             </div>
-
+                <!-- Search History Section (NOW OUTSIDE) -->
+            <section class="history-section">
+                <div class="history-header-bar">
+                    <h2>🕒 Search History</h2>
+                    <button id="refresh-history-btn" class="btn-refresh">
+                        🔄 Refresh
+                    </button>
+                </div>
+                <div id="history-container" class="history-container">
+                    <p class="loading">Connecting to server...</p>
+                </div>
+            </section>
                 <!-- D2: Live Results Display -->
             <div id="live-results" class="live-results-container">
                 <div id="search-info" class="search-info">
@@ -528,6 +548,7 @@
                 </div>
             }
         </div>
+        }
 
 @*        !-- D2: WebSocket Client JavaScript -->*@
         <script src="@routes.Assets.versioned("javascripts/websocket-client.js")"></script>

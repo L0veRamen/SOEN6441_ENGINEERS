@@ -126,7 +126,7 @@ generateJavadoc := {
     "-d", outDir.getAbsolutePath,
     "-sourcepath", sourcePath.getAbsolutePath,
     "-classpath", cp,
-    "-subpackages", "models:controllers:services:modules",
+    "-subpackages", "models:controllers:services:modules:actors",
     "-Xdoclint:none"
   )
 
