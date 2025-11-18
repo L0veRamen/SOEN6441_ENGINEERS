@@ -136,7 +136,6 @@ public class UserActorTest {
         stubSearch("ai", "relevancy",
                 completed(initialBlock),
                 completed(updateBlock));
-
         when(readabilityService.calculateAverageReadability(anyList()))
                 .thenReturn(initialBlock.readability(), updateBlock.readability());
 
@@ -148,6 +147,15 @@ public class UserActorTest {
         JsonNode initialResults = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
         assertEquals("initial_results", initialResults.get("type").asText());
         assertEquals(2, initialResults.get("data").get("articles").size());
+
+        // New behavior: search history is pushed automatically after each search
+        JsonNode historyMessage = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("history", historyMessage.get("type").asText());
+
+        JsonNode historyData = historyMessage.get("data");
+        assertNotNull(historyData);
+        assertEquals(1, historyData.get("count").asInt());
+        assertEquals(10, historyData.get("maxHistory").asInt());
 
         JsonNode readabilityMessage = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
         assertEquals("readability", readabilityMessage.get("type").asText());
@@ -231,8 +239,15 @@ public class UserActorTest {
         ActorRef userActor = spawnUserActor(socketProbe);
 
         sendStartSearch(userActor, "ai", "relevancy");
-        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class); // initial_results
-        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class); // readability
+        JsonNode initialResults = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("initial_results", initialResults.get("type").asText());
+
+        // New behavior: automatic history push after search
+        JsonNode historyMessage = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("history", historyMessage.get("type").asText());
+
+        JsonNode readability = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("readability", readability.get("type").asText());
 
         ObjectNode stop = mapper.createObjectNode();
         stop.put("type", "stop_search");
@@ -312,6 +327,10 @@ public class UserActorTest {
         JsonNode initialResults = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
         assertEquals("initial_results", initialResults.get("type").asText());
         assertEquals(0, initialResults.get("data").get("articles").size());
+
+        // With empty results we still push history, but no task actors run
+        JsonNode historyMessage = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("history", historyMessage.get("type").asText());
 
         socketProbe.expectNoMessage(SHORT_WAIT);
     }
@@ -409,13 +428,29 @@ public class UserActorTest {
         TestKit socketProbe = new TestKit(system);
         ActorRef userActor = spawnUserActor(socketProbe);
 
+        // Perform 11 searches to exceed MAX_HISTORY (10)
         IntStream.rangeClosed(0, 10).forEach(index -> {
             sendStartSearch(userActor, "q" + index, "relevancy");
+            // Drain the three messages produced per search:
+            // initial_results, history, readability
+            socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
             socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
             socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
         });
 
-        verify(searchService, times(11)).search(anyString(), eq("relevancy"));
+        // Request history and assert that only the 10 most recent searches remain
+        ObjectNode historyRequest = mapper.createObjectNode();
+        historyRequest.put("type", "get_history");
+        userActor.tell(historyRequest, ActorRef.noSender());
+
+        JsonNode historyMessage = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("history", historyMessage.get("type").asText());
+
+        JsonNode data = historyMessage.get("data");
+        assertNotNull(data);
+        JsonNode searches = data.get("searches");
+        // Only verify bounded size; query strings themselves are provided by SearchService
+        assertEquals(10, searches.size());
     }
 
     @Test
@@ -433,12 +468,15 @@ public class UserActorTest {
 
         // Perform a couple of searches to populate in-actor history
         sendStartSearch(userActor, "q1", "relevancy");
-        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class); // initial_results
-        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class); // readability
+        // Drain the three messages: initial_results, history, readability
+        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
 
         sendStartSearch(userActor, "q2", "relevancy");
-        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class); // initial_results
-        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class); // readability
+        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
 
         // Request history over WebSocket
         ObjectNode historyRequest = mapper.createObjectNode();
