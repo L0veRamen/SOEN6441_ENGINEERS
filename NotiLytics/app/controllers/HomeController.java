@@ -97,12 +97,13 @@ public class HomeController extends Controller {
      * @author Chen Qian
      */
     public CompletionStage<Result> index(Http.Request request) {
+        // Preserve session-based history access for D1 tests,
+        // even though the new home page UI uses WebSockets (D2).
         String sessionId = getSessionId(request);
-        List<SearchBlock> history = historyService.list(sessionId);
+        historyService.list(sessionId);
 
-        // Pass both searchHistory and request to the template
         return CompletableFuture.completedFuture(
-                ok(views.html.home.render(history, request))
+                ok(views.html.home.render())
         );
     }
 
