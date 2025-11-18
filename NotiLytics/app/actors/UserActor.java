@@ -389,7 +389,10 @@ public class UserActor extends AbstractActor {
 
                     // Add to history (max 10, FIFO)
                     addToHistory(searchBlock);
-
+                    
+                    // AUTO-UPDATE: Send updated history to the client
+                    sendHistory();
+                    
                     // Track seen URLs (bounded LRU)
                     searchBlock.articles().forEach(article ->
                             seenUrls.add(article.url())

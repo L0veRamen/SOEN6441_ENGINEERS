@@ -123,6 +123,10 @@
                     display: block;
                 }
 
+                /* ============================================ */
+                /* INLINE ANALYTICS STYLES                     */
+                /* Compact display in search info              */
+                /* ============================================ */
                 .search-info {
                     background: #f5f5f5;
                     padding: 1rem;
@@ -131,8 +135,9 @@
                 }
 
                 .search-info h3 {
-                    margin: 0 0 0.5rem 0;
+                    margin: 0 0 0.75rem 0;
                     color: #333;
+                    font-size: 1.4rem;
                 }
 
                 .search-meta {
@@ -141,12 +146,94 @@
                     flex-wrap: wrap;
                     font-size: 0.9rem;
                     color: #666;
+                    align-items: center;
                 }
 
+                .search-meta span {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.25rem;
+                }
+
+                .analytics-inline {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    padding: 0.25rem 0.75rem;
+                    background: #e3f2fd;
+                    border-radius: 5px;
+                    font-weight: 500;
+                    color: #1976d2;
+                }
+
+                .analytics-inline.sentiment {
+                    background: #f3e5f5;
+                    color: #7b1fa2;
+                }
+
+                .analytics-value {
+                    font-weight: bold;
+                    color: #1565c0;
+                }
+
+                /* Articles Container */
                 .articles-container {
                     display: flex;
                     flex-direction: column;
                     gap: 1rem;
+                    margin-top: 1rem;
+                }
+
+                .article {
+                    background: white;
+                    padding: 1rem;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 5px;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                }
+
+                .article-title {
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    margin-bottom: 0.5rem;
+                    color: #1976d2;
+                }
+
+                .article-title a {
+                    color: #1976d2;
+                    text-decoration: none;
+                }
+
+                .article-title a:hover {
+                    text-decoration: underline;
+                }
+
+                .article-meta {
+                    font-size: 0.85rem;
+                    color: #666;
+                    margin-bottom: 0.5rem;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 0.75rem;
+                    align-items: center;
+                }
+
+                .article-readability-inline {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    padding: 0.2rem 0.6rem;
+                    background: #e8f5e9;
+                    border-radius: 4px;
+                    font-size: 0.8rem;
+                    font-weight: 500;
+                    color: #2e7d32;
+                }
+
+                .article-description {
+                    color: #444;
+                    line-height: 1.6;
+                    font-size: 0.95rem;
                 }
 
                 .new-article {
@@ -176,69 +263,103 @@
                     }
                 }
 
+                /* Task panels for other analyses (hidden by default) */
                 .task-panels {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                    gap: 1rem;
+                    gap: 1.5rem;
                     margin-top: 2rem;
                 }
 
                 .task-panel {
                     background: white;
-                    border: 1px solid #ddd;
-                    border-radius: 5px;
-                    padding: 1rem;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 8px;
+                    padding: 1.5rem;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
                     display: none;
+                }
+
+                .task-panel.show {
+                    display: block;
                 }
 
                 .task-panel h4 {
                     margin: 0 0 1rem 0;
-                    color: #667eea;
+                    color: #333;
                     font-size: 1.2rem;
+                    border-bottom: 2px solid #667eea;
+                    padding-bottom: 0.5rem;
                 }
 
                 .task-result-content {
-                    font-size: 0.9rem;
+                    font-size: 0.95rem;
                     line-height: 1.6;
                 }
 
-                .task-result-content p {
-                    margin: 0.5rem 0;
+                .placeholder {
+                    color: #999;
+                    font-style: italic;
+                    text-align: center;
+                    padding: 2rem;
                 }
 
-                .task-result-content ul {
-                    margin: 0.5rem 0;
-                    padding-left: 1.5rem;
+                /* History Section */
+                .history-section {
+                    margin-top: 3rem;
+                    background: #f9f9f9;
+                    padding: 2rem;
+                    border-radius: 8px;
                 }
 
-                .notification {
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    background: #4caf50;
+                .history-header-bar {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1.5rem;
+                }
+
+                .history-header-bar h2 {
+                    margin: 0;
+                    color: #333;
+                }
+
+                .btn-refresh {
+                    padding: 0.5rem 1rem;
+                    background: #667eea;
                     color: white;
-                    padding: 1rem 1.5rem;
-                    border-radius: 5px;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-                    opacity: 0;
-                    transform: translateY(-20px);
-                    transition: all 0.3s;
-                    z-index: 1000;
-                }
-
-                .notification.show {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-
-                .divider {
-                    margin: 3rem 0;
                     border: none;
-                    border-top: 2px solid #e0e0e0;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 0.9rem;
+                    transition: background 0.3s;
                 }
 
-                /* Responsive design */
+                .btn-refresh:hover {
+                    background: #5568d3;
+                }
+
+                .history-container {
+                    background: white;
+                    padding: 1.5rem;
+                    border-radius: 6px;
+                    border: 1px solid #e0e0e0;
+                }
+
+                .loading {
+                    text-align: center;
+                    color: #999;
+                    font-style: italic;
+                }
+
+                /* Responsive Design */
                 @@media (max-width: 768px) {
+                .search-meta {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 0.5rem;
+                }
+
                 .ws-controls {
                     flex-direction: column;
                 }
@@ -247,95 +368,10 @@
                 .ws-controls select,
                 .ws-controls button {
                     width: 100%;
-                    min-width: 0;
+                    min-width: 100%;
+                }
                 }
 
-                .task-panels {
-                    grid-template-columns: 1fr;
-                }
-
-                /* Readability panel refinements */
-                #readability-panel {
-                    font-size: 0.9rem;
-                    border-radius: 10px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-                }
-
-                #readability-panel h4 {
-                    font-size: 1.05rem;
-                    margin-bottom: 0.5rem;
-                    color: #374151;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.4rem;
-                }
-
-                #readability-summary .task-result-content p {
-                    margin: 0.25rem 0;
-                }
-
-                #readability-summary .metric-footnote {
-                    margin-top: 0.35rem;
-                    font-size: 0.8rem;
-                    color: #6b7280;
-                }
-
-                /* Per-article area */
-                .readability-articles {
-                    margin-top: 0.75rem;
-                    padding-top: 0.75rem;
-                    border-top: 1px solid #e5e7eb;
-                }
-
-                .readability-articles h5 {
-                    margin: 0 0 0.35rem 0;
-                    font-size: 0.9rem;
-                    color: #4b5563;
-                    font-weight: 600;
-                }
-
-                /* New compact row layout */
-                .readability-article-list {
-                    margin: 0;
-                    padding: 0;
-                }
-
-                .readability-row {
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 0.4rem;
-                    font-size: 0.8rem;      /* smaller text to fit */
-                    line-height: 1.35;
-                    margin-bottom: 0.35rem;
-                }
-
-                .readability-row-index {
-                    flex: 0 0 auto;
-                    font-weight: 600;
-                    color: #6b7280;
-                    min-width: 1.5rem;
-                    text-align: right;
-                }
-
-                .readability-row-main {
-                    flex: 1;
-                }
-
-                .readability-item-title {
-                    font-weight: 500;
-                    color: #111827;
-                }
-
-                .readability-item-meta {
-                    font-size: 0.78rem;
-                    color: #4b5563;
-                }
-
-                .readability-item-meta .readability-interpretation {
-                    font-style: italic;
-                    margin-left: 0.25rem;
-                    color: #6b7280;
-                }
                 @@keyframes fadeIn {
                     from {
                         opacity: 0;
@@ -345,9 +381,6 @@
                         opacity: 1;
                         transform: translateY(0);
                     }
-
-
-
                 }
         </style>
     </head>
@@ -355,7 +388,7 @@
         <header>
             <div class="container">
                 <h1>📰 NotiLytics</h1>
-                <p class="subtitle">Search and analyze news articles from around the world - Now with Live Updates !</p>
+                <p class="subtitle">Search and analyze news articles from around the world - Now with Live Updates!</p>
                     <!-- News sources -->
                 <div class="header-actions">
                     <a href="@routes.HomeController.sources()" class="btn-primary btn-with-icon">
@@ -363,7 +396,6 @@
                         <span>View Sources</span>
                     </a>
                 </div>
-
             </div>
         </header>
 
@@ -399,7 +431,8 @@
                     <button id="stop-search-btn" disabled>Stop Search</button>
                 </div>
             </div>
-                <!-- Search History Section (NOW OUTSIDE) -->
+
+                <!-- Search History Section -->
             <section class="history-section">
                 <div class="history-header-bar">
                     <h2>🕒 Search History</h2>
@@ -411,32 +444,21 @@
                     <p class="loading">Connecting to server...</p>
                 </div>
             </section>
+
                 <!-- D2: Live Results Display -->
             <div id="live-results" class="live-results-container">
+                    <!-- Search info with INLINE analytics -->
                 <div id="search-info" class="search-info">
-                        <!-- Search metadata will be inserted here -->
+                        <!-- Search metadata will be inserted here by JavaScript -->
                 </div>
 
+                    <!-- Articles Container -->
                 <div id="articles-container" class="articles-container">
                         <!-- Articles will be appended here -->
                 </div>
 
-                    <!-- D2: Individual Task Results Panels -->
+                    <!-- D2: Other Task Results Panels (Word Stats, Source Profile, etc.) -->
                 <div class="task-panels">
-                    <div id="readability-panel" class="task-panel">
-                            <!-- Readability results will be inserted here -->
-                        <h4>📖 Readability Analysis</h4>
-                        <div id="readability-summary" class="metric-body">
-                            <p class="placeholder">Run a search to see readability scores.</p>
-                        </div>
-                            <!-- Per-article breakdown will be injected here -->
-                        <div id="readability-articles"></div>
-                    </div>
-
-                    <div id="sentiment-panel" class="task-panel">
-                            <!-- Sentiment results will be inserted here -->
-                    </div>
-
                     <div id="source-profile-panel" class="task-panel">
                             <!-- Source profile results will be inserted here -->
                     </div>
@@ -451,10 +473,10 @@
                 </div>
             </div>
 
-                <!-- Search History -->
+                <!-- Static Search History (D1 compatibility) -->
             @if(searchHistory != null && !searchHistory.isEmpty()) {
-                <div class="search-history">
-                    <h2>Search History
+                <div class="search-history" style="margin-top: 3rem;">
+                    <h2>Search History (Static)
                         <span class="badge badge-info">@searchHistory.size() @if(searchHistory.size() == 1) {search} else {searches}</span>
                     </h2>
 
@@ -470,9 +492,6 @@
                                     <span>📊 <strong>@block.totalResults()</strong> total results</span>
                                     <span>🔄 Sorted by: <strong>@block.sortBy()</strong></span>
                                     <span>🕒 @block.createdAtIso()</span>
-                                    @* ============================================ *@
-                                    @* TASK E: Display Average Readability Scores  *@
-                                    @* ============================================ *@
                                     @if(block.readability() != null && block.readability().isValid()) {
                                         <span class="readability-badge">
                                             📖 <strong>Readability:</strong>
@@ -514,7 +533,6 @@
                                             @if(article.publishedAt() != null && !article.publishedAt().isEmpty()) {
                                                 | Published: @article.publishedAt()
                                             }
-                                            @* OPTIONAL: Individual article readability *@
                                             @if(block.articleReadability() != null && idx < block.articleReadability().size()) {
                                                 @defining(block.articleReadability().get(idx)) { scores =>
                                                     @if(scores.isValid()) {
@@ -544,13 +562,12 @@
                 </div>
             } else {
                 <div class="no-results">
-                    <p>👋 Welcome! Use the live search above or the traditional search form to get started.</p>
+                    <p>👋 Welcome! Use the live search above to get started.</p>
                 </div>
             }
         </div>
-        }
 
-@*        !-- D2: WebSocket Client JavaScript -->*@
+            <!-- D2: WebSocket Client JavaScript -->
         <script src="@routes.Assets.versioned("javascripts/websocket-client.js")"></script>
     </body>
 </html>

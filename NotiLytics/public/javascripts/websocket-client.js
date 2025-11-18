@@ -1,84 +1,34 @@
 /**
- * NotiLytics D2 - WebSocket Client
- *
- * Manages WebSocket connection for real-time news updates.
- * Implements message protocol defined in the group design document.
- *
- * Message Types:
- * Client → Server:
- *   - start_search: Begin new live search
- *   - stop_search: Stop current search
- *   - ping: Keep-alive heartbeat
- *
- * Server → Client:
- *   - initial_results: First 10 articles (immediate)
- *   - append: New articles (live updates)
- *   - status: Operation status
- *   - error: Error messages
- *   - pong: Heartbeat response
- *   - sourceProfile, wordStats, sentiment, readability, sources: Task results
+ * WebSocket Client for D2 Live Search
+ * Displays readability and sentiment inline with search results
  *
  * @author Group Members
  */
-
-(function () {
+(function() {
     'use strict';
 
-    // ========== STATE MANAGEMENT ==========
-
-    let ws = null;
-    let isConnected = false;
-    let currentQuery = null;
-    let isSearching = false;
-    let pingInterval = null;
-    let reconnectAttempts = 0;
-    const MAX_RECONNECT_ATTEMPTS = 5;
-    const RECONNECT_DELAY = 3000; // 3 seconds
-    const PING_INTERVAL = 30000; // 30 seconds
-    // Articles currently displayed in the live results section
+    let ws;
     let liveArticles = [];
+    let currentReadability = null;
+    let currentSentiment = null;
+    let currentArticleReadability = [];
 
-    // ========== DOM ELEMENTS ==========
-
-    let elements = {};
-
-    /**
-     * Initialize DOM element references
-     * @author Group Members
-     */
-    function initElements() {
-        elements = {
-            // Controls
-            queryInput: document.getElementById('ws-query'),
-            sortBySelect: document.getElementById('ws-sortBy'),
-            startBtn: document.getElementById('start-search-btn'),
-            stopBtn: document.getElementById('stop-search-btn'),
-
-            // Status
-            statusIndicator: document.getElementById('ws-status'),
-            statusText: document.getElementById('ws-status-text'),
-
-            // Results containers
-            resultsContainer: document.getElementById('live-results'),
-            searchInfo: document.getElementById('search-info'),
-            articlesContainer: document.getElementById('articles-container'),
-
-            // Task panels
-            readabilityPanel: document.getElementById('readability-panel'),
-            sentimentPanel: document.getElementById('sentiment-panel'),
-            sourceProfilePanel: document.getElementById('source-profile-panel'),
-            wordStatsPanel: document.getElementById('word-stats-panel'),
-            sourcesPanel: document.getElementById('sources-panel'),
-
-            // Add this where the other event listeners are set up
-            History: document.getElementById('refresh-history-btn')?.addEventListener('click', function() {
-                console.log('[History] Manual refresh requested');
-                getHistory(false); // false = show loading indicator
-            })
-        };
-    }
-
-    // ========== WEBSOCKET CONNECTION ==========
+    const elements = {
+        wsQuery: document.getElementById('ws-query'),
+        wsSortBy: document.getElementById('ws-sortBy'),
+        startBtn: document.getElementById('start-search-btn'),
+        stopBtn: document.getElementById('stop-search-btn'),
+        wsStatus: document.getElementById('ws-status'),
+        wsStatusText: document.getElementById('ws-status-text'),
+        liveResults: document.getElementById('live-results'),
+        searchInfo: document.getElementById('search-info'),
+        articlesContainer: document.getElementById('articles-container'),
+        historyContainer: document.getElementById('history-container'),
+        refreshHistoryBtn: document.getElementById('refresh-history-btn'),
+        sourceProfilePanel: document.getElementById('source-profile-panel'),
+        wordStatsPanel: document.getElementById('word-stats-panel'),
+        sourcesPanel: document.getElementById('sources-panel')
+    };
 
     /**
      * Initialize WebSocket connection
@@ -100,38 +50,36 @@
     }
 
     /**
-     * Handle WebSocket connection opened
+     * Handle WebSocket open event
      * @author Group Members
      */
     function handleOpen() {
         console.log('[WebSocket] Connected');
-        isConnected = true;
-        reconnectAttempts = 0;
-        updateStatus('connected', 'Connected Successfully');
-
-        // Start the ping interval
-        startPingInterval();
+        updateStatus('connected', 'Connected');
 
         // Enable controls
-        enableControls();
+        elements.wsQuery.disabled = false;
+        elements.wsSortBy.disabled = false;
+        elements.startBtn.disabled = false;
 
-        // AUTO-REQUEST HISTORY ON CONNECT
-        setTimeout(() => {
-            getHistory();
-        }, 500); // Small delay to ensure the actor is ready
+        // Request initial history
+        sendMessage({ type: 'get_history' });
     }
 
     /**
-     * Handle incoming WebSocket message
+     * Handle incoming WebSocket messages
      * @param {MessageEvent} event WebSocket message event
      * @author Group Members
      */
     function handleMessage(event) {
         try {
             const message = JSON.parse(event.data);
-            console.log('[WebSocket] Received:', message.type);
+            console.log('[WebSocket] Message received:', message.type);
 
             switch (message.type) {
+                case 'pong':
+                    console.log('[WebSocket] Pong received');
+                    break;
                 case 'initial_results':
                     handleInitialResults(message.data);
                     break;
@@ -144,18 +92,14 @@
                 case 'error':
                     handleErrorMessage(message.data);
                     break;
-                case 'pong':
-                    console.log('[WebSocket] Pong received');
+                case 'history':
+                    handleHistoryUpdate(message.data);
                     break;
-                case 'history':  // ← NEW CASE
-                    handleHistory(message.data);
-                    break;
-                // Individual task results
                 case 'readability':
-                    handleReadabilityResult(message.data);
+                    handleReadabilityUpdate(message.data);
                     break;
                 case 'sentiment':
-                    handleSentimentResult(message.data);
+                    handleSentimentUpdate(message.data);
                     break;
                 case 'sourceProfile':
                     handleSourceProfileResult(message.data);
@@ -170,198 +114,205 @@
                     console.warn('[WebSocket] Unknown message type:', message.type);
             }
         } catch (error) {
-            console.error('[WebSocket] Failed to parse message:', error);
+            console.error('[WebSocket] Error parsing message:', error);
         }
     }
-
-    /**
-     * Request search history from server
-     * @param {boolean} silent - If true, don't show loading indicator
-     * @author Group Members
-     */
-    function getHistory(silent = false) {
-        if (!isConnected) {
-            console.warn('[WebSocket] Cannot get history - not connected');
-            return;
-        }
-
-        console.log('[WebSocket] Requesting search history');
-
-        // Show loading indicator (unless silent)
-        const historyContainer = document.getElementById('history-container');
-        if (!silent && historyContainer && historyContainer.children.length > 0) {
-            historyContainer.style.opacity = '0.6';
-        }
-
-        const message = {
-            type: 'get_history'
-        };
-
-        ws.send(JSON.stringify(message));
-    }
-
-    /**
-     * Handle search history response
-     * @param {Object} data History data
-     * @author Group Members
-     */
-    function handleHistory(data) {
-        console.log('[History] Received history:', data.count, 'searches');
-
-        const historyContainer = document.getElementById('history-container');
-        if (!historyContainer) {
-            console.warn('[History] No history container found');
-            return;
-        }
-
-        // Restore opacity (remove loading effect)
-        historyContainer.style.opacity = '1';
-        historyContainer.style.transition = 'opacity 0.3s';
-
-        // Clear existing history
-        historyContainer.innerHTML = '';
-
-        if (data.count === 0) {
-            historyContainer.innerHTML = '<p class="no-history">No search history yet</p>';
-            return;
-        }
-
-        // Create the history list
-        const historyList = document.createElement('div');
-        historyList.className = 'history-list';
-
-        data.searches.forEach((search, index) => {
-            const historyItem = document.createElement('div');
-            historyItem.className = 'history-item';
-
-            historyItem.innerHTML = `
-            <div class="history-header">
-                <span class="history-query">${escapeHtml(search.query)}</span>
-                <span class="history-count">${search.totalResults} results</span>
-            </div>
-            <div class="history-meta">
-                <span>Sort: ${escapeHtml(search.sortBy)}</span>
-                <span>Time: ${new Date(search.createdAtIso).toLocaleString()}</span>
-            </div>
-            <button class="history-replay" data-query="${escapeHtml(search.query)}" 
-                    data-sortby="${escapeHtml(search.sortBy)}">
-                Replay Search
-            </button>
-        `;
-
-            historyList.appendChild(historyItem);
-        });
-
-        historyContainer.appendChild(historyList);
-
-        // Add event listeners to replay buttons
-        historyContainer.querySelectorAll('.history-replay').forEach(button => {
-            button.addEventListener('click', function() {
-                const query = this.getAttribute('data-query');
-                const sortBy = this.getAttribute('data-sortby');
-
-                // Set form values
-                if (elements.queryInput) elements.queryInput.value = query;
-                if (elements.sortBySelect) elements.sortBySelect.value = sortBy;
-
-                // Start search
-                startSearch();
-            });
-        });
-    }
-
-
 
     /**
      * Handle WebSocket error
-     * @param {Event} event Error event
+     * @param {Event} error WebSocket error event
      * @author Group Members
      */
-    function handleError(event) {
-        console.error('[WebSocket] Error:', event);
+    function handleError(error) {
+        console.error('[WebSocket] Error:', error);
         updateStatus('error', 'Connection error');
     }
 
     /**
-     * Handle WebSocket connection closed
-     * @param {CloseEvent} event Close event
+     * Handle WebSocket close event
+     * @param {CloseEvent} event WebSocket close event
      * @author Group Members
      */
     function handleClose(event) {
         console.log('[WebSocket] Closed:', event.code, event.reason);
-        isConnected = false;
-        isSearching = false;
-        stopPingInterval();
-
         updateStatus('disconnected', 'Disconnected');
-        disableControls();
 
-        // Attempt reconnection
-        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-            reconnectAttempts++;
-            console.log(`[WebSocket] Reconnect attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
-            updateStatus('connecting', `Reconnecting... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
-            setTimeout(initWebSocket, RECONNECT_DELAY);
+        // Disable controls
+        elements.wsQuery.disabled = true;
+        elements.wsSortBy.disabled = true;
+        elements.startBtn.disabled = true;
+        elements.stopBtn.disabled = true;
+
+        // Attempt reconnection after 3 seconds
+        setTimeout(() => {
+            console.log('[WebSocket] Attempting reconnection...');
+            initWebSocket();
+        }, 3000);
+    }
+
+    /**
+     * Send a message through WebSocket
+     * @param {Object} message Message object to send
+     * @author Group Members
+     */
+    function sendMessage(message) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(message));
+            console.log('[WebSocket] Message sent:', message.type);
         } else {
-            updateStatus('error', 'Connection lost. Please refresh page.');
+            console.error('[WebSocket] Cannot send message - not connected');
         }
     }
 
-    // ========== MESSAGE HANDLERS ==========
+    /**
+     * Update connection status indicator
+     * @param {string} status Status class (connecting/connected/disconnected/error/searching)
+     * @param {string} text Status text
+     * @author Group Members
+     */
+    function updateStatus(status, text) {
+        elements.wsStatus.className = `status-indicator status-${status}`;
+        elements.wsStatusText.textContent = text;
+    }
 
     /**
-     * Handle initial search results
+     * Start live search
+     * @author Group Members
+     */
+    function startSearch() {
+        const query = elements.wsQuery.value.trim();
+        const sortBy = elements.wsSortBy.value;
+
+        if (!query) {
+            alert('Please enter a search query');
+            return;
+        }
+
+        console.log('[Search] Starting:', query, sortBy);
+        updateStatus('searching', `Searching for "${query}"...`);
+
+        // Clear previous results
+        liveArticles = [];
+        currentReadability = null;
+        currentSentiment = null;
+        currentArticleReadability = [];
+        elements.articlesContainer.innerHTML = '';
+        elements.searchInfo.innerHTML = '';
+
+        // Show results container
+        elements.liveResults.classList.add('show');
+
+        // Send start search message
+        sendMessage({
+            type: 'start_search',
+            query: query,
+            sortBy: sortBy
+        });
+
+        // Update button states
+        elements.startBtn.disabled = true;
+        elements.stopBtn.disabled = false;
+        elements.wsQuery.disabled = true;
+        elements.wsSortBy.disabled = true;
+    }
+
+    /**
+     * Stop live search
+     * @author Group Members
+     */
+    function stopSearch() {
+        console.log('[Search] Stopping');
+        sendMessage({ type: 'stop_search' });
+
+        updateStatus('connected', 'Connected');
+
+        // Update button states
+        elements.startBtn.disabled = false;
+        elements.stopBtn.disabled = true;
+        elements.wsQuery.disabled = false;
+        elements.wsSortBy.disabled = false;
+    }
+
+    /**
+     * Handle initial search results - INLINE ANALYTICS VERSION
+     * Displays readability and sentiment inline with search metadata
+     *
      * @param {Object} data Initial results data
      * @author Group Members
      */
     function handleInitialResults(data) {
-        console.log('[Results] Initial results received:', data.articles.length);
+        console.log('[Results] Initial results received:', data.count);
 
-        // Track the current batch of live articles (for per-article readability)
-        liveArticles = data.articles.slice();
+        // Store analytics data
+        currentReadability = data.readability;
+        currentSentiment = data.sentiment;
+        currentArticleReadability = data.articleReadability || [];
 
-        // Update search info
+        // Build search info with INLINE analytics
         updateSearchInfo(data);
 
-        // Clear previous results
+        // Clear and populate articles
         elements.articlesContainer.innerHTML = '';
+        liveArticles = [];
 
-        // Display articles
-        data.articles.forEach(article => {
-            appendArticle(article, false); // false = not new
-        });
+        if (data.articles && data.articles.length > 0) {
+            data.articles.forEach((article, index) => {
+                liveArticles.push(article);
+                const articleReadability = currentArticleReadability[index];
+                appendArticle(article, false, articleReadability);
+            });
+        }
+    }
 
-        // Show the result container
-        elements.resultsContainer.style.display = 'block';
+    /**
+     * Update search info section with inline analytics
+     * @param {Object} data Search data with analytics
+     * @author Chen Qian
+     */
+    function updateSearchInfo(data) {
+        const query = escapeHtml(data.query);
+        const totalResults = data.totalResults || 0;
+        const sortBy = data.sortBy || 'publishedAt';
+        const count = data.count || 0;
 
-        // AUTO-REFRESH HISTORY AFTER SEARCH COMPLETES
-        console.log('[History] Auto-refreshing history after search completion');
-        setTimeout(() => {
-            getHistory();
-        }, 500); // Small delay to ensure backend has processed
+        // Build analytics inline spans
+        let analyticsHtml = '';
 
-        // Let the separate task messages populate panels,
-        // but we can also bootstrap readability using the initial payload.
-        if (data.readability && data.articleReadability) {
-            const readabilityPayload = {
-                gradeLevel: data.readability.gradeLevel,
-                readingEase: data.readability.readingEase,
-                interpretation: getReadingEaseInterpretation(data.readability.readingEase),
-                articleCount: data.articleReadability.length,
-                isValid: data.readability.gradeLevel > 0,
-                articleScores: data.articleReadability.map(s => ({
-                    gradeLevel: s.gradeLevel,
-                    readingEase: s.readingEase,
-                    interpretation: getReadingEaseInterpretation(s.readingEase),
-                    isValid: s.gradeLevel > 0
-                }))
-            };
-            handleReadabilityResult(readabilityPayload);
+        // Readability analytics
+        if (currentReadability && currentReadability.gradeLevel > 0) {
+            const interpretation = getReadingEaseInterpretation(currentReadability.readingEase);
+            analyticsHtml += `
+                <span class="analytics-inline">
+                    📖 Grade Level: <span class="analytics-value">${currentReadability.gradeLevel.toFixed(1)}</span>
+                </span>
+                <span class="analytics-inline">
+                    📊 Reading Ease: <span class="analytics-value">${currentReadability.readingEase.toFixed(1)}</span>
+                </span>
+                <span class="analytics-inline">
+                    📝 Interpretation: <span class="analytics-value">${interpretation}</span>
+                </span>
+            `;
         }
 
-        if (data.sentiment) {
-            handleSentimentResult(data.sentiment);
+        // Sentiment analytics
+        if (currentSentiment && currentSentiment.sentiment) {
+            analyticsHtml += `
+                <span class="analytics-inline sentiment">
+                    💬 Sentiment: <span class="analytics-value">${currentSentiment.description || currentSentiment.sentiment}</span>
+                </span>
+            `;
         }
+
+        // Update the search info section
+        elements.searchInfo.innerHTML = `
+            <h3>Search Results: "${query}"</h3>
+            <div class="search-meta">
+                <span>📊 <strong>${totalResults}</strong> total results</span>
+                <span>🔄 Sorted by: <strong>${sortBy}</strong></span>
+                <span>⏱️ <strong>${count}</strong> articles displayed</span>
+                ${analyticsHtml}
+            </div>
+        `;
     }
 
     /**
@@ -373,13 +324,86 @@
         console.log('[Results] New articles appended:', data.count);
 
         if (data.articles && data.articles.length > 0) {
-            data.articles.forEach(article => {
-                liveArticles.push(article);          // track for readability
-                appendArticle(article, true);        // true = new article
+            data.articles.forEach((article, index) => {
+                const articleIndex = liveArticles.length;
+                liveArticles.push(article);
+
+                // Get readability for this new article if available
+                const articleReadability = data.articleReadability
+                    ? data.articleReadability[index]
+                    : null;
+
+                appendArticle(article, true, articleReadability);
             });
 
-            // Show notification
             showNotification(`${data.count} new article(s) added`);
+        }
+    }
+
+    /**
+     * Append article to the display with inline readability
+     * @param {Object} article Article data
+     * @param {boolean} isNew Whether this is a newly appended article
+     * @param {Object} readability Per-article readability scores
+     * @author Group Members
+     */
+    function appendArticle(article, isNew, readability) {
+        const articleEl = document.createElement('div');
+        articleEl.className = 'article' + (isNew ? ' new-article' : '');
+
+        // Build readability inline display
+        let readabilityHtml = '';
+        if (readability && readability.gradeLevel > 0) {
+            readabilityHtml = `
+                <span class="article-readability-inline">
+                    📚 Grade: <strong>${readability.gradeLevel.toFixed(1)}</strong>, 
+                    Ease: <strong>${readability.readingEase.toFixed(1)}</strong>
+                </span>
+            `;
+        }
+
+        articleEl.innerHTML = `
+            ${isNew ? '<div class="new-badge">NEW</div>' : ''}
+            <div class="article-title">
+                ${article.url ?
+            `<a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.title)}</a>` :
+            escapeHtml(article.title)
+        }
+            </div>
+            <div class="article-meta">
+                ${article.sourceName ? `Source: ${escapeHtml(article.sourceName)}` : ''}
+                ${article.publishedAt ? ` | Published: ${escapeHtml(article.publishedAt)}` : ''}
+                ${readabilityHtml}
+            </div>
+            ${article.description ? `<div class="article-description">${escapeHtml(article.description)}</div>` : ''}
+        `;
+
+        elements.articlesContainer.appendChild(articleEl);
+
+        // Scroll to new article if it's new
+        if (isNew) {
+            setTimeout(() => {
+                articleEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+    }
+
+    /**
+     * Show notification
+     * @param {string} message Notification message
+     * @author Group Members
+     */
+    function showNotification(message) {
+        console.log('[Notification]', message);
+
+        const metaDiv = elements.searchInfo.querySelector('.search-meta');
+        if (metaDiv) {
+            const badge = document.createElement('span');
+            badge.style.cssText = 'background: #4caf50; color: white; padding: 0.25rem 0.5rem; border-radius: 3px;';
+            badge.textContent = message;
+            metaDiv.appendChild(badge);
+
+            setTimeout(() => badge.remove(), 3000);
         }
     }
 
@@ -405,112 +429,86 @@
     }
 
     /**
-     * Handle readability analysis result
-     * @param {Object} data Readability data
-     * Expected shape (from ReadabilityActor OR built in handleInitialResults):
-     *  {
-     *    gradeLevel: number,
-     *    readingEase: number,
-     *    interpretation: string,
-     *    articleCount: number,
-     *    isValid: boolean,
-     *    articleScores?: [{ gradeLevel, readingEase, interpretation, isValid }]
-     *  }
+     * Handle history update
+     * @param {Object} data History data
      * @author Group Members
      */
-    function handleReadabilityResult(data) {
-        if (!elements.readabilityPanel) return;
+    function handleHistoryUpdate(data) {
+        const searches = data.searches || [];
+        console.log('[History] Received', searches.length, 'searches');
 
-        const panel = elements.readabilityPanel;
-        const summaryEl = document.getElementById('readability-summary');
-        let breakdownEl = document.getElementById('readability-articles');
-
-        if (!summaryEl) return;
-
-        // Make panel visible
-        panel.style.display = 'block';
-
-        // --- Overall summary ---
-
-        if (!data || data.isValid === false || !data.articleCount) {
-            summaryEl.innerHTML = `
-            <p>No valid descriptions found to calculate readability.</p>
-        `;
-            if (breakdownEl) breakdownEl.innerHTML = '';
+        if (searches.length === 0) {
+            elements.historyContainer.innerHTML = '<p class="no-results">No search history yet.</p>';
             return;
         }
 
-        const overallInterpretation =
-            data.interpretation || getReadingEaseInterpretation(data.readingEase);
-
-        summaryEl.innerHTML = `
-        <div class="task-result-content">
-            <p><strong>Average Grade Level:</strong> ${data.gradeLevel.toFixed(1)}</p>
-            <p><strong>Average Reading Ease:</strong> ${data.readingEase.toFixed(1)}</p>
-            <p><strong>Interpretation:</strong> ${overallInterpretation}</p>
-            <h3 class="metric-footnote">
-                Based on ${data.articleCount} article${data.articleCount === 1 ? '' : 's'}.
-            </h3>
-        </div>
-    `;
-
-        // --- Per-article breakdown ---
-
-        const articleScores = data.articleScores || [];
-        if (!breakdownEl) {
-            breakdownEl = document.createElement('div');
-            breakdownEl.id = 'readability-articles';
-            breakdownEl.className = 'readability-articles';
-            summaryEl.insertAdjacentElement('afterend', breakdownEl);
-        }
-
-        if (!articleScores.length) {
-            breakdownEl.innerHTML = '';
-            return;
-        }
-
-        // If we don't have titles for some reason, still show the scores
-        const count = liveArticles.length
-            ? Math.min(articleScores.length, liveArticles.length)
-            : articleScores.length;
-
-        const rows = [];
-        let visibleIndex = 1;
-
-        for (let i = 0; i < count; i++) {
-            const score = articleScores[i];
-            if (!score || score.isValid === false) continue;
-
-            const article = liveArticles[i] || {};
-            const title = article.title ? escapeHtml(article.title) : `Article ${visibleIndex}`;
-            const interp =
-                score.interpretation || getReadingEaseInterpretation(score.readingEase);
-
-            rows.push(`
-                <div class="readability-row">
-                    <span class="readability-row-index">${visibleIndex}.</span>
-                    <div class="readability-row-main">
-                        <div class="readability-item-title">${title}</div>
-                        <div class="readability-item-meta">
-                            Grade ${score.gradeLevel.toFixed(1)},
-                            Ease ${score.readingEase.toFixed(1)}
-                            <span class="readability-interpretation">(${interp})</span>
-                        </div>
-                    </div>
+        elements.historyContainer.innerHTML = searches.map((search, index) => `
+            <div class="history-item" style="padding: 1rem; border-bottom: 1px solid #e0e0e0; cursor: pointer;"
+                 onclick="replaySearch('${escapeHtml(search.query)}', '${search.sortBy}')">
+                <h4 style="margin: 0 0 0.5rem 0; color: #667eea;">
+                    ${index + 1}. ${escapeHtml(search.query)}
+                </h4>
+                <div style="font-size: 0.9rem; color: #666;">
+                    <span>📊 ${search.totalResults} results</span>
+                    <span style="margin-left: 1rem;">🔄 ${search.sortBy}</span>
+                    <span style="margin-left: 1rem;">⏱️ ${search.createdAt}</span>
                 </div>
-            `);
-            visibleIndex++;
-        }
+            </div>
+        `).join('');
+    }
 
-        if (rows.length) {
-            breakdownEl.innerHTML = `
-                <h4>Per-Article Readability</h4>
-                <div class="readability-article-list">
-                    ${rows.join('')}
-                </div>
-            `;
-        } else {
-            breakdownEl.innerHTML = '';
+    /**
+     * Replay a search from history
+     * @param {string} query Search query
+     * @param {string} sortBy Sort option
+     * @author Group Members
+     */
+    window.replaySearch = function(query, sortBy) {
+        elements.wsQuery.value = query;
+        elements.wsSortBy.value = sortBy;
+        startSearch();
+    };
+
+    /**
+     * Handle readability update (separate message)
+     * Updates the inline analytics display
+     * @param {Object} data Readability data
+     * @author Chen Qian
+     */
+    function handleReadabilityUpdate(data) {
+        if (data && data.gradeLevel > 0) {
+            currentReadability = data;
+            currentArticleReadability = data.articleScores || [];
+
+            // Rebuild search info with updated readability
+            const currentData = {
+                query: elements.wsQuery.value,
+                totalResults: liveArticles.length,
+                sortBy: elements.wsSortBy.value,
+                count: liveArticles.length
+            };
+            updateSearchInfo(currentData);
+        }
+    }
+
+    /**
+     * Handle sentiment update (separate message)
+     * Updates the inline analytics display
+     * @param {Object} data Sentiment data
+     * @author Group Members
+     */
+    function handleSentimentUpdate(data) {
+        if (data && data.sentiment) {
+            currentSentiment = data;
+
+            // Rebuild search info with updated sentiment
+            const currentData = {
+                query: elements.wsQuery.value,
+                totalResults: liveArticles.length,
+                sortBy: elements.wsSortBy.value,
+                count: liveArticles.length
+            };
+            updateSearchInfo(currentData);
         }
     }
 
@@ -531,24 +529,6 @@
     }
 
     /**
-     * Handle sentiment analysis result
-     * @param {Object} data Sentiment data
-     * @author Group Members
-     */
-    function handleSentimentResult(data) {
-        if (!elements.sentimentPanel) return;
-
-        elements.sentimentPanel.innerHTML = `
-            <h4>💬 Sentiment Analysis</h4>
-            <div class="task-result-content">
-                <p><strong>Overall Sentiment:</strong> ${data.sentiment}</p>
-                <p><strong>Description:</strong> ${data.description}</p>
-            </div>
-        `;
-        elements.sentimentPanel.style.display = 'block';
-    }
-
-    /**
      * Handle source profile result
      * @param {Object} data Source profile data
      * @author Group Members
@@ -558,20 +538,20 @@
 
         const profile = data.profile;
         elements.sourceProfilePanel.innerHTML = `
-            <h4>🌐 Source Profile: ${data.sourceName}</h4>
+            <h4>🌐 Source Profile: ${escapeHtml(data.sourceName)}</h4>
             <div class="task-result-content">
                 <p><strong>Total Articles:</strong> ${data.totalArticles}</p>
                 ${profile ? `
-                    <p><strong>Name:</strong> ${profile.name}</p>
-                    <p><strong>Description:</strong> ${profile.description || 'N/A'}</p>
-                    <p><strong>Category:</strong> ${profile.category || 'N/A'}</p>
+                    <p><strong>Name:</strong> ${escapeHtml(profile.name)}</p>
+                    <p><strong>Description:</strong> ${escapeHtml(profile.description || 'N/A')}</p>
+                    <p><strong>Category:</strong> ${escapeHtml(profile.category || 'N/A')}</p>
                     <p><strong>Language:</strong> ${profile.language || 'N/A'}</p>
                     <p><strong>Country:</strong> ${profile.country || 'N/A'}</p>
-                    ${profile.url ? `<p><strong>Website:</strong> <a href="${profile.url}" target="_blank">${profile.url}</a></p>` : ''}
+                    ${profile.url ? `<p><strong>Website:</strong> <a href="${escapeHtml(profile.url)}" target="_blank">${escapeHtml(profile.url)}</a></p>` : ''}
                 ` : '<p>No profile data available</p>'}
             </div>
         `;
-        elements.sourceProfilePanel.style.display = 'block';
+        elements.sourceProfilePanel.classList.add('show');
     }
 
     /**
@@ -587,136 +567,46 @@
         elements.wordStatsPanel.innerHTML = `
             <h4>📊 Word Statistics</h4>
             <div class="task-result-content">
-                <p><strong>Query:</strong> ${data.query}</p>
+                <p><strong>Query:</strong> ${escapeHtml(data.query)}</p>
                 <p><strong>Total Articles:</strong> ${data.totalArticles}</p>
                 <p><strong>Total Words:</strong> ${data.totalWords}</p>
                 <p><strong>Unique Words:</strong> ${data.uniqueWords}</p>
                 <h5>Top 10 Words:</h5>
                 <ul>
-                    ${topWords.map(w => `<li>${w.word}: ${w.count}</li>`).join('')}
+                    ${topWords.map(w => `<li>${escapeHtml(w.word)}: ${w.count}</li>`).join('')}
                 </ul>
             </div>
         `;
-        elements.wordStatsPanel.style.display = 'block';
+        elements.wordStatsPanel.classList.add('show');
     }
 
     /**
-     * Handle news sources result
+     * Handle sources result
      * @param {Object} data Sources data
      * @author Group Members
      */
     function handleSourcesResult(data) {
         if (!elements.sourcesPanel) return;
 
-        const sources = data.sources.slice(0, 10);
+        const sources = data.sources || [];
 
         elements.sourcesPanel.innerHTML = `
-            <h4>📡 News Sources</h4>
+            <h4>📰 News Sources</h4>
             <div class="task-result-content">
                 <p><strong>Total Sources:</strong> ${data.count}</p>
-                <h5>Top 10 Sources:</h5>
+                <h5>Available Sources:</h5>
                 <ul>
-                    ${sources.map(s => `
+                    ${sources.slice(0, 10).map(s => `
                         <li>
-                            <strong>${s.name}</strong> (${s.id})
-                            <br>Category: ${s.category}, Language: ${s.language}, Country: ${s.country}
+                            <strong>${escapeHtml(s.name)}</strong><br>
+                            ${s.description ? escapeHtml(s.description) : 'No description'}
                         </li>
                     `).join('')}
                 </ul>
+                ${sources.length > 10 ? `<p><em>...and ${sources.length - 10} more</em></p>` : ''}
             </div>
         `;
-        elements.sourcesPanel.style.display = 'block';
-    }
-
-    // ========== UI UPDATES ==========
-
-    /**
-     * Update connection status indicator
-     * @param {string} status Status type (connecting|connected|disconnected|error)
-     * @param {string} text Status text
-     * @author Group Members
-     */
-    function updateStatus(status, text) {
-        if (!elements.statusIndicator || !elements.statusText) return;
-
-        elements.statusIndicator.className = 'status-indicator status-' + status;
-        elements.statusText.textContent = text;
-    }
-
-    /**
-     * Update search information display
-     * @param {Object} data Search data
-     * @author Group Members
-     */
-    function updateSearchInfo(data) {
-        if (!elements.searchInfo) return;
-
-        elements.searchInfo.innerHTML = `
-            <h3>${data.query}</h3>
-            <div class="search-meta">
-                <span><strong>${data.totalResults}</strong> total results</span>
-                <span>Sorted by: <strong>${data.sortBy}</strong></span>
-                <span>${new Date(data.timestamp).toLocaleString()}</span>
-            </div>
-        `;
-    }
-
-    /**
-     * Append article to results container
-     * @param {Object} article Article data
-     * @param {boolean} isNew Whether article is newly added
-     * @author Group Members
-     */
-    function appendArticle(article, isNew) {
-        const articleDiv = document.createElement('div');
-        articleDiv.className = 'article' + (isNew ? ' new-article' : '');
-
-        articleDiv.innerHTML = `
-            ${isNew ? '<span class="new-badge">NEW</span>' : ''}
-            <div class="article-title">
-                ${article.url ?
-            `<a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.title)}</a>` :
-            escapeHtml(article.title)
-        }
-            </div>
-            <div class="article-meta">
-                ${article.sourceName ? `Source: <strong>${escapeHtml(article.sourceName)}</strong>` : ''}
-                ${article.publishedAt ? ` | Published: ${new Date(article.publishedAt).toLocaleString()}` : ''}
-            </div>
-            ${article.description ?
-            `<div class="article-description">${escapeHtml(article.description)}</div>` :
-            ''
-        }
-        `;
-
-        elements.articlesContainer.appendChild(articleDiv);
-
-        // Scroll new articles into view smoothly
-        if (isNew) {
-            articleDiv.scrollIntoView({behavior: 'smooth', block: 'nearest'});
-        }
-    }
-
-    /**
-     * Show notification toast
-     * @param {string} message Notification message
-     * @author Group Members
-     */
-    function showNotification(message) {
-        // Simple notification - you can enhance this with a proper toast library
-        const notification = document.createElement('div');
-        notification.className = 'notification';
-        notification.textContent = message;
-        document.body.appendChild(notification);
-
-        setTimeout(() => {
-            notification.classList.add('show');
-        }, 10);
-
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
+        elements.sourcesPanel.classList.add('show');
     }
 
     /**
@@ -726,224 +616,37 @@
      * @author Group Members
      */
     function escapeHtml(text) {
+        if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 
-    // ========== CONTROLS ==========
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
 
-    /**
-     * Enable search controls
-     * @author Group Members
-     */
-    function enableControls() {
-        if (elements.queryInput) elements.queryInput.disabled = false;
-        if (elements.sortBySelect) elements.sortBySelect.disabled = false;
-        if (elements.startBtn) {
-            elements.startBtn.disabled = false;
-            elements.startBtn.textContent = 'Start Live Search';
+    elements.startBtn.addEventListener('click', startSearch);
+    elements.stopBtn.addEventListener('click', stopSearch);
+
+    elements.wsQuery.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !elements.startBtn.disabled) {
+            startSearch();
         }
-    }
+    });
 
-    /**
-     * Disable search controls
-     * @author Group Members
-     */
-    function disableControls() {
-        if (elements.queryInput) elements.queryInput.disabled = true;
-        if (elements.sortBySelect) elements.sortBySelect.disabled = true;
-        if (elements.startBtn) elements.startBtn.disabled = true;
-        if (elements.stopBtn) elements.stopBtn.disabled = true;
-    }
+    elements.refreshHistoryBtn.addEventListener('click', () => {
+        console.log('[History] Requesting refresh');
+        sendMessage({ type: 'get_history' });
+    });
 
-    /**
-     * Start new search
-     * @author Group Members
-     */
-    function startSearch() {
-        liveArticles = [];           // reset for new search
-        elements.articlesContainer.innerHTML = '';  // clear old live results
+    // ============================================
+    // INITIALIZATION
+    // ============================================
 
-        if (!isConnected) {
-            alert('WebSocket not connected. Please wait or refresh the page.');
-            return;
-        }
+    // Start WebSocket connection on page load
+    initWebSocket();
 
-        const query = elements.queryInput.value.trim();
-        if (!query) {
-            alert('Please enter a search query');
-            elements.queryInput.focus();
-            return;
-        }
-
-        const sortBy = elements.sortBySelect.value;
-
-        console.log('[Search] Starting:', query, sortBy);
-
-        // Send start_search message
-        sendMessage({
-            type: 'start_search',
-            query: query,
-            sortBy: sortBy
-        });
-
-        // Update state
-        currentQuery = query;
-        isSearching = true;
-
-        // Update UI
-        elements.startBtn.disabled = true;
-        elements.stopBtn.disabled = false;
-        updateStatus('searching', `Searching for "${query}"...`);
-
-        // Hide task panels until new results arrive
-        hideTaskPanels();
-    }
-
-    /**
-     * Stop current search
-     * @author Group Members
-     */
-    function stopSearch() {
-        if (!isConnected || !isSearching) return;
-
-        console.log('[Search] Stopping');
-
-        // Send stop_search message
-        sendMessage({
-            type: 'stop_search'
-        });
-
-        // Update state
-        isSearching = false;
-
-        // Update UI
-        elements.startBtn.disabled = false;
-        elements.stopBtn.disabled = true;
-        updateStatus('connected', 'Search stopped');
-    }
-
-    /**
-     * Hide all task panels
-     * @author Group Members
-     */
-    function hideTaskPanels() {
-        [
-            elements.readabilityPanel,
-            elements.sentimentPanel,
-            elements.sourceProfilePanel,
-            elements.wordStatsPanel,
-            elements.sourcesPanel
-        ].forEach(panel => {
-            if (panel) panel.style.display = 'none';
-        });
-    }
-
-    /**
-     * Send the message to server
-     * @param {Object} message Message object
-     * @author Group Members
-     */
-    function sendMessage(message) {
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-            console.error('[WebSocket] Cannot send message - not connected');
-            return;
-        }
-
-        try {
-            ws.send(JSON.stringify(message));
-            console.log('[WebSocket] Sent:', message.type);
-        } catch (error) {
-            console.error('[WebSocket] Failed to send message:', error);
-        }
-    }
-
-    // ========== PING/PONG ==========
-
-    /**
-     * Start ping interval
-     * @author Group Members
-     */
-    function startPingInterval() {
-        stopPingInterval(); // Clear any existing interval
-
-        pingInterval = setInterval(() => {
-            if (isConnected) {
-                sendMessage({type: 'ping'});
-            }
-        }, PING_INTERVAL);
-    }
-
-    /**
-     * Stop ping interval
-     * @author Group Members
-     */
-    function stopPingInterval() {
-        if (pingInterval) {
-            clearInterval(pingInterval);
-            pingInterval = null;
-        }
-    }
-
-    // ========== EVENT LISTENERS ==========
-
-    /**
-     * Initialize event listeners
-     * @author Group Members
-     */
-    function initEventListeners() {
-        // Start search button
-        if (elements.startBtn) {
-            elements.startBtn.addEventListener('click', startSearch);
-        }
-
-        // Stop search button
-        if (elements.stopBtn) {
-            elements.stopBtn.addEventListener('click', stopSearch);
-        }
-
-        // Enter key in query input
-        if (elements.queryInput) {
-            elements.queryInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !isSearching) {
-                    startSearch();
-                }
-            });
-        }
-
-        // Close connection on page unloading
-        window.addEventListener('beforeunload', () => {
-            if (ws) {
-                ws.close();
-            }
-        });
-    }
-
-    // ========== INITIALIZATION ==========
-
-    /**
-     * Initialize WebSocket client
-     * @author Group Members
-     */
-    function init() {
-        console.log('[WebSocket] Initializing client');
-
-        // Initialize DOM elements
-        initElements();
-
-        // Initialize event listeners
-        initEventListeners();
-
-        // Connect WebSocket
-        initWebSocket();
-    }
-
-    // Start when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+    console.log('[App] WebSocket client initialized - INLINE ANALYTICS MODE');
 
 })();
