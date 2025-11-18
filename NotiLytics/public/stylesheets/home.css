@@ -326,21 +326,6 @@
     color: #333;
 }
 
-.btn-refresh {
-    padding: 0.5rem 1rem;
-    background: #667eea;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: background 0.3s;
-}
-
-.btn-refresh:hover {
-    background: #5568d3;
-}
-
 .history-container {
     background: white;
     padding: 1.5rem;
@@ -388,4 +373,3 @@
         transform: translateY(0);
     }
 }
-

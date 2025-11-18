@@ -406,27 +406,6 @@ a.badge:hover {
     gap: 0.5rem;
 }
 
-.btn-refresh {
-    padding: 0.6rem 1.2rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 600;
-    transition: all 0.3s;
-    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
-}
-
-.btn-refresh:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
-}
-
-.btn-refresh:active {
-    transform: translateY(0);
-}
 
 .history-container {
     max-height: 600px;
@@ -586,10 +565,6 @@ a.badge:hover {
 
     .history-header-bar h2 {
         font-size: 1.3rem;
-    }
-
-    .btn-refresh {
-        width: 100%;
     }
 
     .history-meta {

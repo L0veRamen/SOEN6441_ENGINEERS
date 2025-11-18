@@ -24,7 +24,6 @@
     searchInfo: document.getElementById("search-info"),
     articlesContainer: document.getElementById("articles-container"),
     historyContainer: document.getElementById("history-container"),
-    refreshHistoryBtn: document.getElementById("refresh-history-btn"),
     sourceProfilePanel: document.getElementById("source-profile-panel"),
     wordStatsPanel: document.getElementById("word-stats-panel"),
     sourcesPanel: document.getElementById("sources-panel"),
@@ -707,11 +706,6 @@
     if (e.key === "Enter" && !elements.startBtn.disabled) {
       startSearch();
     }
-  });
-
-  elements.refreshHistoryBtn.addEventListener("click", () => {
-    console.log("[History] Requesting refresh");
-    sendMessage({ type: "get_history" });
   });
 
   // ============================================

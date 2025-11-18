@@ -49,8 +49,7 @@ import java.util.Map;
  */
 public class UserActor extends AbstractActor {
 
-    private static final org.slf4j.Logger log =
-            org.slf4j.LoggerFactory.getLogger(UserActor.class);
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(UserActor.class);
 
     // ========== CONFIGURATION CONSTANTS ==========
     private static final int MAX_HISTORY = 10;
@@ -61,8 +60,8 @@ public class UserActor extends AbstractActor {
     private static final Duration RETRY_WINDOW = Duration.ofMinutes(1);
 
     // ========== DEPENDENCIES (INJECTED) ==========
-    private final ActorRef out;              // WebSocket output reference
-    private final String sessionId;          // Unique session identifier
+    private final ActorRef out; // WebSocket output reference
+    private final String sessionId; // Unique session identifier
     private final SearchService searchService;
     private final NewsApiClient newsApiClient;
     private final ObjectMapper mapper;
@@ -96,8 +95,7 @@ public class UserActor extends AbstractActor {
             String sessionId,
             SearchService searchService,
             NewsApiClient newsApiClient,
-            ReadabilityService readabilityService
-    ) {
+            ReadabilityService readabilityService) {
         this.out = out;
         this.sessionId = sessionId;
         this.searchService = searchService;
@@ -130,16 +128,14 @@ public class UserActor extends AbstractActor {
             String sessionId,
             SearchService searchService,
             NewsApiClient newsApiClient,
-            ReadabilityService readabilityService
-    ) {
+            ReadabilityService readabilityService) {
         return Props.create(
                 UserActor.class,
                 out,
                 sessionId,
                 searchService,
                 newsApiClient,
-                readabilityService
-        );
+                readabilityService);
     }
 
     // ========== SUPERVISION STRATEGY (D2 REQUIREMENT #2) ==========
@@ -166,31 +162,28 @@ public class UserActor extends AbstractActor {
     @Override
     public SupervisorStrategy supervisorStrategy() {
         return new OneForOneStrategy(
-                MAX_RETRIES,            // maxNrOfRetries
-                RETRY_WINDOW,           // withinTimeRange
+                MAX_RETRIES, // maxNrOfRetries
+                RETRY_WINDOW, // withinTimeRange
                 DeciderBuilder
                         // Handle News API timeouts
                         .match(java.net.http.HttpTimeoutException.class, e -> {
                             log.warn(
                                     "Child timed out calling News API in session {}: {}",
-                                    sessionId, e.getMessage()
-                            );
+                                    sessionId, e.getMessage());
                             return SupervisorStrategy.restart();
                         })
                         // Handle News API connection errors
                         .match(java.io.IOException.class, e -> {
                             log.warn(
                                     "Child IO error (News API) in session {}: {}",
-                                    sessionId, e.getMessage()
-                            );
+                                    sessionId, e.getMessage());
                             return SupervisorStrategy.restart();
                         })
                         // Handle JSON parsing errors
                         .match(com.fasterxml.jackson.core.JsonProcessingException.class, e -> {
                             log.error(
                                     "Child JSON parse error in session {}: {}",
-                                    sessionId, e.getMessage()
-                            );
+                                    sessionId, e.getMessage());
                             return SupervisorStrategy.restart();
                         })
                         // Handle all other exceptions
@@ -199,8 +192,7 @@ public class UserActor extends AbstractActor {
                                     "Child actor failed in session {}: {} - {}",
                                     sessionId,
                                     e.getClass().getSimpleName(),
-                                    e.getMessage()
-                            );
+                                    e.getMessage());
                             return SupervisorStrategy.restart();
                         })
                         // Escalate unknown errors to parent
@@ -208,8 +200,7 @@ public class UserActor extends AbstractActor {
                             log.error("Unknown failure in session {}: {}", sessionId, o);
                             return SupervisorStrategy.escalate();
                         })
-                        .build()
-        );
+                        .build());
     }
 
     // ========== LIFECYCLE METHODS ==========
@@ -228,35 +219,33 @@ public class UserActor extends AbstractActor {
         // NOTE: Child actors are injected via Guice in production
         // For now, we pass null and handle injection in child constructors
 
-//        sourceProfileActor = getContext().actorOf(
-//                Props.create(SourceProfileActor.class),
-//                "source-profile-" + sessionId
-//        );
-//
-//        wordStatsActor = getContext().actorOf(
-//                Props.create(WordStatsActor.class),
-//                "word-stats-" + sessionId
-//        );
-//
-//        newsSourcesActor = getContext().actorOf(
-//                Props.create(NewsSourcesActor.class),
-//                "news-sources-" + sessionId
-//        );
-//
-//        sentimentAnalysisActor = getContext().actorOf(
-//                Props.create(SentimentAnalysisActor.class),
-//                "sentiment-" + sessionId
-//        );
+        // sourceProfileActor = getContext().actorOf(
+        // Props.create(SourceProfileActor.class),
+        // "source-profile-" + sessionId
+        // );
+        //
+        // wordStatsActor = getContext().actorOf(
+        // Props.create(WordStatsActor.class),
+        // "word-stats-" + sessionId
+        // );
+        //
+        // newsSourcesActor = getContext().actorOf(
+        // Props.create(NewsSourcesActor.class),
+        // "news-sources-" + sessionId
+        // );
+        //
+        // sentimentAnalysisActor = getContext().actorOf(
+        // Props.create(SentimentAnalysisActor.class),
+        // "sentiment-" + sessionId
+        // );
 
         readabilityActor = getContext().actorOf(
                 ReadabilityActor.props(readabilityService),
-                "readability-" + sessionId
-        );
+                "readability-" + sessionId);
 
         log.info(
                 "UserActor created 5 supervised children for session: {}",
-                sessionId
-        );
+                sessionId);
     }
 
     /**
@@ -384,19 +373,16 @@ public class UserActor extends AbstractActor {
                             "timestamp", searchBlock.createdAtIso(),
                             "readability", searchBlock.readability(), // overall average
                             "articleReadability", searchBlock.articleReadability(), // per-article scores
-                            "sentiment", searchBlock.articleSentiment()
-                    ));
+                            "sentiment", searchBlock.articleSentiment()));
 
                     // Add to history (max 10, FIFO)
                     addToHistory(searchBlock);
-                    
+
                     // AUTO-UPDATE: Send updated history to the client
                     sendHistory();
-                    
+
                     // Track seen URLs (bounded LRU)
-                    searchBlock.articles().forEach(article ->
-                            seenUrls.add(article.url())
-                    );
+                    searchBlock.articles().forEach(article -> seenUrls.add(article.url()));
 
                     log.debug("Tracked {} URLs for dedup in session {}",
                             seenUrls.size(), sessionId);
@@ -423,12 +409,12 @@ public class UserActor extends AbstractActor {
      */
     private void scheduleUpdates() {
         updateScheduler = getContext().getSystem().scheduler().scheduleAtFixedRate(
-                UPDATE_INTERVAL,        // initialDelay
-                UPDATE_INTERVAL,        // interval
-                getSelf(),              // receiver
-                new UpdateCheck(),      // message
-                getContext().getSystem().dispatcher(),  // executor
-                getSelf()               // sender
+                UPDATE_INTERVAL, // initialDelay
+                UPDATE_INTERVAL, // interval
+                getSelf(), // receiver
+                new UpdateCheck(), // message
+                getContext().getSystem().dispatcher(), // executor
+                getSelf() // sender
         );
 
         log.info("Scheduled updates every {} seconds for session {}",
@@ -480,8 +466,7 @@ public class UserActor extends AbstractActor {
                         // Send to the client
                         sendToWebSocket("append", Map.of(
                                 "articles", newArticles,
-                                "count", newArticles.size()
-                        ));
+                                "count", newArticles.size()));
 
                         // Trigger task analysis
                         triggerTaskAnalysis(newArticles);
@@ -533,36 +518,35 @@ public class UserActor extends AbstractActor {
         log.debug("Triggering task analysis for {} articles in session {}",
                 articles.size(), sessionId);
 
-//        // Task A: Source Profile (first article's source)
+        // // Task A: Source Profile (first article's source)
         String sourceName = articles.getFirst().getSourceDisplayName();
-//        sourceProfileActor.tell(
-//                new AnalyzeSource(sourceName),
-//                getSelf()
-//        );
-//
-//        // Task B: Word Stats
-//        wordStatsActor.tell(
-//                new AnalyzeWords(currentQuery),
-//                getSelf()
-//        );
-//
-//        // Task C: News Sources
-//        newsSourcesActor.tell(
-//                new FetchSources(null, null, null),
-//                getSelf()
-//        );
-//
-//        // Task D: Sentiment Analysis
-//        sentimentAnalysisActor.tell(
-//                new AnalyzeSentiment(articles),
-//                getSelf()
-//        );
-//
+        // sourceProfileActor.tell(
+        // new AnalyzeSource(sourceName),
+        // getSelf()
+        // );
+        //
+        // // Task B: Word Stats
+        // wordStatsActor.tell(
+        // new AnalyzeWords(currentQuery),
+        // getSelf()
+        // );
+        //
+        // // Task C: News Sources
+        // newsSourcesActor.tell(
+        // new FetchSources(null, null, null),
+        // getSelf()
+        // );
+        //
+        // // Task D: Sentiment Analysis
+        // sentimentAnalysisActor.tell(
+        // new AnalyzeSentiment(articles),
+        // getSelf()
+        // );
+        //
         // Task E: Readability
         readabilityActor.tell(
                 new AnalyzeReadability(articles),
-                getSelf()
-        );
+                getSelf());
     }
 
     /**
@@ -589,21 +573,18 @@ public class UserActor extends AbstractActor {
         if (error instanceof java.net.http.HttpTimeoutException) {
             log.warn("News API timeout for session {}", sessionId);
             sendToWebSocket("status", Map.of(
-                    "message", "Search delayed due to slow API response"
-            ));
+                    "message", "Search delayed due to slow API response"));
 
         } else if (error instanceof java.net.ConnectException) {
             log.error("News API unreachable for session {}", sessionId);
             sendToWebSocket("error", Map.of(
-                    "message", "News service temporarily unavailable. Please try again later."
-            ));
+                    "message", "News service temporarily unavailable. Please try again later."));
             stopCurrentSearch();
 
         } else if (error.getMessage().contains("429")) {
             log.warn("News API rate limit exceeded for session {}", sessionId);
             sendToWebSocket("error", Map.of(
-                    "message", "Too many requests. Please wait a moment and try again."
-            ));
+                    "message", "Too many requests. Please wait a moment and try again."));
             // Slow down updates
             if (updateScheduler != null) {
                 updateScheduler.cancel();
@@ -613,16 +594,14 @@ public class UserActor extends AbstractActor {
                         getSelf(),
                         new UpdateCheck(),
                         getContext().getSystem().dispatcher(),
-                        getSelf()
-                );
+                        getSelf());
             }
 
         } else {
             log.error("News API error for session {}: {}",
                     sessionId, error.getMessage());
             sendToWebSocket("error", Map.of(
-                    "message", "Search failed: " + error.getMessage()
-            ));
+                    "message", "Search failed: " + error.getMessage()));
         }
     }
 
@@ -636,10 +615,10 @@ public class UserActor extends AbstractActor {
      * @author Group Members
      */
     private void addToHistory(SearchBlock searchBlock) {
-        searchHistory.addFirst(searchBlock);  // Add to front (newest first)
+        searchHistory.addFirst(searchBlock); // Add to front (newest first)
 
         if (searchHistory.size() > MAX_HISTORY) {
-            searchHistory.remove(MAX_HISTORY);  // Remove oldest
+            searchHistory.remove(MAX_HISTORY); // Remove oldest
             log.debug("Removed oldest search from history for session {}",
                     sessionId);
         }
@@ -703,10 +682,9 @@ public class UserActor extends AbstractActor {
         sendToWebSocket("history", Map.of(
                 "searches", searchHistory,
                 "count", searchHistory.size(),
-                "maxHistory", MAX_HISTORY
-        ));
+                "maxHistory", MAX_HISTORY));
     }
-    
+
     // ========== INNER CLASSES ==========
 
     /**
@@ -734,7 +712,7 @@ public class UserActor extends AbstractActor {
          * @param maxSize Maximum number of entries
          */
         public LRUSet(int maxSize) {
-            super(maxSize + 1, 0.75f, true);  // accessOrder = true (LRU)
+            super(maxSize + 1, 0.75f, true); // accessOrder = true (LRU)
             this.maxSize = maxSize;
         }
 
