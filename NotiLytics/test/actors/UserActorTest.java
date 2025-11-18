@@ -406,7 +406,6 @@ public class UserActorTest {
                 .thenReturn(initialBlock.readability());
         when(searchService.search(anyString(), eq("relevancy")))
                 .thenReturn(CompletableFuture.completedFuture(initialBlock));
-
         TestKit socketProbe = new TestKit(system);
         ActorRef userActor = spawnUserActor(socketProbe);
 
@@ -417,6 +416,45 @@ public class UserActorTest {
         });
 
         verify(searchService, times(11)).search(anyString(), eq("relevancy"));
+    }
+
+    @Test
+    public void getHistorySendsSearchHistoryPayload() {
+        SearchBlock block1 = block("q1", "relevancy", List.of(articleOne));
+        SearchBlock block2 = block("q2", "relevancy", List.of(articleTwo));
+
+        when(readabilityService.calculateAverageReadability(anyList()))
+                .thenReturn(block1.readability(), block2.readability());
+        stubSearch("q1", "relevancy", completed(block1));
+        stubSearch("q2", "relevancy", completed(block2));
+
+        TestKit socketProbe = new TestKit(system);
+        ActorRef userActor = spawnUserActor(socketProbe);
+
+        // Perform a couple of searches to populate in-actor history
+        sendStartSearch(userActor, "q1", "relevancy");
+        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class); // initial_results
+        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class); // readability
+
+        sendStartSearch(userActor, "q2", "relevancy");
+        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class); // initial_results
+        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class); // readability
+
+        // Request history over WebSocket
+        ObjectNode historyRequest = mapper.createObjectNode();
+        historyRequest.put("type", "get_history");
+        userActor.tell(historyRequest, ActorRef.noSender());
+
+        JsonNode historyMessage = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("history", historyMessage.get("type").asText());
+
+        JsonNode data = historyMessage.get("data");
+        assertNotNull(data);
+        assertEquals(2, data.get("count").asInt());
+        assertEquals(10, data.get("maxHistory").asInt());
+        assertEquals(2, data.get("searches").size());
+        assertEquals("q2", data.get("searches").get(0).get("query").asText());
+        assertEquals("q1", data.get("searches").get(1).get("query").asText());
     }
 
     @Test
