@@ -389,7 +389,7 @@
             <div class="article-meta">
                 ${
                   article.sourceName
-                    ? `Source: ${escapeHtml(article.sourceName)}`
+                    ? `Source: <a href="/source/${escapeHtml(article.sourceId)}">${escapeHtml(article.sourceName)}</a>`
                     : ""
                 }
                 ${
