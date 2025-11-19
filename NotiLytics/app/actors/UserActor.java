@@ -388,8 +388,8 @@ public class UserActor extends AbstractActor {
                     log.debug("Tracked {} URLs for dedup in session {}",
                             seenUrls.size(), sessionId);
 
-                    // Trigger individual task analysis
-                    triggerTaskAnalysis(searchBlock.articles());
+                    // Trigger individual task analysis (include source profile on initial load)
+                    triggerTaskAnalysis(searchBlock.articles(), true);
 
                     // Schedule periodic updates (every 30 seconds)
                     scheduleUpdates();
@@ -469,8 +469,8 @@ public class UserActor extends AbstractActor {
                                 "articles", newArticles,
                                 "count", newArticles.size()));
 
-                        // Trigger task analysis
-                        triggerTaskAnalysis(newArticles);
+                        // Trigger task analysis (skip source profile on incremental updates)
+                        triggerTaskAnalysis(newArticles, false);
                     } else {
                         log.debug("No new articles for session {}", sessionId);
                     }
@@ -508,23 +508,25 @@ public class UserActor extends AbstractActor {
      * Each actor receives the relevant message and processes asynchronously
      *
      * @param articles Articles to analyze
+     * @param includeSourceProfile Whether to re-run source profile analysis
+     *
      * @author Group Members
      */
-    private void triggerTaskAnalysis(List<Article> articles) {
+    private void triggerTaskAnalysis(List<Article> articles, boolean includeSourceProfile) {
         if (articles.isEmpty()) {
             log.debug("No articles to analyze for session {}", sessionId);
             return;
         }
 
-        log.debug("Triggering task analysis for {} articles in session {}",
-                articles.size(), sessionId);
+        log.debug("Triggering task analysis for {} articles in session {} (includeSourceProfile={})",
+                articles.size(), sessionId, includeSourceProfile);
 
-        // // Task A: Source Profile (first article's source)
-        String sourceName = articles.getFirst().getSourceId();
-        sourceProfileActor.tell(
-            new AnalyzeSource(sourceName),
-            getSelf()
-        );
+        if (includeSourceProfile) {
+            String sourceName = articles.getFirst().getSourceId();
+            sourceProfileActor.tell(
+                    new AnalyzeSource(sourceName),
+                    getSelf());
+        }
         //
         // // Task B: Word Stats
         // wordStatsActor.tell(

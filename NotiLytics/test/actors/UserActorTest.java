@@ -182,7 +182,7 @@ public class UserActorTest {
         assertEquals(1, appendMessage.get("data").get("count").asInt());
 
         JsonNode updatedReadability = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
-//        assertEquals(5.5, updatedReadability.get("data").get("gradeLevel").asDouble(), 0.01);
+        assertEquals(5.5, updatedReadability.get("data").get("gradeLevel").asDouble(), 0.01);
 
         verify(searchService, times(2)).search("ai", "relevancy");
     }
