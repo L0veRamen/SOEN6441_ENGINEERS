@@ -1,16 +1,12 @@
 package actors;
 
-import actors.messages.AnalyzeReadability;
-import actors.messages.TaskResult;
+import actors.messages.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import models.Article;
-import models.SearchBlock;
+import models.*;
 import org.apache.pekko.actor.*;
 import org.apache.pekko.japi.pf.DeciderBuilder;
-import services.NewsApiClient;
-import services.ReadabilityService;
-import services.SearchService;
+import services.*;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -65,6 +61,7 @@ public class UserActor extends AbstractActor {
     private final SearchService searchService;
     private final NewsApiClient newsApiClient;
     private final ObjectMapper mapper;
+    private final ProfileService profileService;
     private final ReadabilityService readabilityService;
 
     // ========== SESSION STATE (IN-MEMORY) ==========
@@ -95,12 +92,14 @@ public class UserActor extends AbstractActor {
             String sessionId,
             SearchService searchService,
             NewsApiClient newsApiClient,
+            ProfileService profileService,
             ReadabilityService readabilityService) {
         this.out = out;
         this.sessionId = sessionId;
         this.searchService = searchService;
         this.newsApiClient = newsApiClient;
         this.mapper = new ObjectMapper();
+        this.profileService = profileService;
         this.readabilityService = readabilityService;
 
         // Initialize state
@@ -128,6 +127,7 @@ public class UserActor extends AbstractActor {
             String sessionId,
             SearchService searchService,
             NewsApiClient newsApiClient,
+            ProfileService profileService,
             ReadabilityService readabilityService) {
         return Props.create(
                 UserActor.class,
@@ -135,6 +135,7 @@ public class UserActor extends AbstractActor {
                 sessionId,
                 searchService,
                 newsApiClient,
+                profileService,
                 readabilityService);
     }
 
@@ -219,10 +220,10 @@ public class UserActor extends AbstractActor {
         // NOTE: Child actors are injected via Guice in production
         // For now, we pass null and handle injection in child constructors
 
-        // sourceProfileActor = getContext().actorOf(
-        // Props.create(SourceProfileActor.class),
-        // "source-profile-" + sessionId
-        // );
+        sourceProfileActor = getContext().actorOf(
+            SourceProfileActor.props(profileService),
+            "source-profile-" + sessionId
+        );
         //
         // wordStatsActor = getContext().actorOf(
         // Props.create(WordStatsActor.class),
@@ -519,11 +520,11 @@ public class UserActor extends AbstractActor {
                 articles.size(), sessionId);
 
         // // Task A: Source Profile (first article's source)
-        String sourceName = articles.getFirst().getSourceDisplayName();
-        // sourceProfileActor.tell(
-        // new AnalyzeSource(sourceName),
-        // getSelf()
-        // );
+        String sourceName = articles.getFirst().getSourceId();
+        sourceProfileActor.tell(
+            new AnalyzeSource(sourceName),
+            getSelf()
+        );
         //
         // // Task B: Word Stats
         // wordStatsActor.tell(

@@ -577,10 +577,11 @@
     if (!elements.sourceProfilePanel) return;
 
     const profile = data.profile;
+    const articles = data.articles;
     elements.sourceProfilePanel.innerHTML = `
-            <h4>🌐 Source Profile: ${escapeHtml(data.sourceName)}</h4>
+            <h4>🌐 Source Profile: ${escapeHtml(profile.name)}</h4>
             <div class="task-result-content">
-                <p><strong>Total Articles:</strong> ${data.totalArticles}</p>
+                <p><strong>Total Articles:</strong> ${articles.length}</p>
                 ${
                   profile
                     ? `

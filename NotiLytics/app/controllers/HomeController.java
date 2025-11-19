@@ -305,6 +305,7 @@ public class HomeController extends Controller {
                             sessionId,
                             searchService,
                             newsApiClient,
+                            profileService,
                             readabilityService
                     ),
                     actorSystem,
