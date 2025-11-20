@@ -15,11 +15,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.OngoingStubbing;
-import services.NewsApiClient;
-import services.ProfileService;
-import services.ReadabilityService;
-import services.SearchHistoryService;
-import services.SearchService;
+import services.*;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -63,6 +59,9 @@ public class UserActorTest {
 
     @Mock
     private SearchHistoryService historyService;
+
+    @Mock
+    private SentimentAnalysisService sentimentService;
 
     private Article articleOne;
     private Article articleTwo;
@@ -176,6 +175,9 @@ public class UserActorTest {
         JsonNode profile = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
         assertEquals("sourceProfile", profile.get("type").asText());
 
+        JsonNode sentiment = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("sentiment", profile.get("type").asText());
+
         JsonNode readabilityMessage = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
         assertEquals("readability", readabilityMessage.get("type").asText());
         assertEquals(7.2, readabilityMessage.get("data").get("gradeLevel").asDouble(), 0.01);
@@ -267,6 +269,9 @@ public class UserActorTest {
 
         JsonNode profile = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
         assertEquals("sourceProfile", profile.get("type").asText());
+
+        JsonNode sentiment = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("sentiment", profile.get("type").asText());
 
         JsonNode readability = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
         assertEquals("readability", readability.get("type").asText());
@@ -701,7 +706,8 @@ public class UserActorTest {
                         historyService,
                         newsApiClient,
                         profileService,
-                        readabilityService
+                        readabilityService,
+                        sentimentService
                 )
         );
     }
@@ -716,7 +722,8 @@ public class UserActorTest {
                         historyService,
                         newsApiClient,
                         profileService,
-                        readabilityService
+                        readabilityService,
+                        sentimentService
                 )
         );
     }

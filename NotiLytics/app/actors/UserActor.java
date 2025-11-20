@@ -64,6 +64,7 @@ public class UserActor extends AbstractActor {
     private final ProfileService profileService;
     private final ReadabilityService readabilityService;
     private final SearchHistoryService historyService;
+    private final SentimentAnalysisService sentimentService;
 
     // ========== SESSION STATE (IN-MEMORY) ==========
     private final List<SearchBlock> searchHistory;
@@ -88,6 +89,7 @@ public class UserActor extends AbstractActor {
      * @param historyService     Search history persistence service
      * @param newsApiClient      NewsAPI client
      * @param readabilityService Readability analysis service
+     * @param sentimentService Sentiment analysis service
      * @author Group Members
      */
     public UserActor(
@@ -97,7 +99,9 @@ public class UserActor extends AbstractActor {
             SearchHistoryService historyService,
             NewsApiClient newsApiClient,
             ProfileService profileService,
-            ReadabilityService readabilityService) {
+            ReadabilityService readabilityService,
+            SentimentAnalysisService sentimentService
+    ) {
         this.out = out;
         this.sessionId = sessionId;
         this.searchService = searchService;
@@ -106,6 +110,7 @@ public class UserActor extends AbstractActor {
         this.mapper = new ObjectMapper();
         this.profileService = profileService;
         this.readabilityService = readabilityService;
+        this.sentimentService = sentimentService;
 
         // Initialize state
         this.searchHistory = new ArrayList<>();
@@ -126,6 +131,7 @@ public class UserActor extends AbstractActor {
      * @param historyService     Search history persistence service
      * @param newsApiClient      NewsAPI HTTP client
      * @param readabilityService Readability analysis service
+     * @param sentimentService Sentiment analysis service
      * @return Props for actor creation
      * @author Group Members
      */
@@ -136,7 +142,9 @@ public class UserActor extends AbstractActor {
             SearchHistoryService historyService,
             NewsApiClient newsApiClient,
             ProfileService profileService,
-            ReadabilityService readabilityService) {
+            ReadabilityService readabilityService,
+            SentimentAnalysisService sentimentService
+    ) {
         return Props.create(
                 UserActor.class,
                 out,
@@ -145,7 +153,9 @@ public class UserActor extends AbstractActor {
                 historyService,
                 newsApiClient,
                 profileService,
-                readabilityService);
+                readabilityService,
+                sentimentService
+        );
     }
 
     // ========== SUPERVISION STRATEGY (D2 REQUIREMENT #2) ==========
@@ -244,11 +254,10 @@ public class UserActor extends AbstractActor {
         // "news-sources-" + sessionId
         // );
         //
-        // sentimentAnalysisActor = getContext().actorOf(
-        // Props.create(SentimentAnalysisActor.class),
-        // "sentiment-" + sessionId
-        // );
-
+         sentimentAnalysisActor = getContext().actorOf(
+                 SentimentAnalysisActor.props(sentimentService),
+                 "sentiment-" + sessionId
+         );
         readabilityActor = getContext().actorOf(
                 ReadabilityActor.props(readabilityService),
                 "readability-" + sessionId);
@@ -534,25 +543,13 @@ public class UserActor extends AbstractActor {
                     new AnalyzeSource(sourceName),
                     getSelf());
         }
-        //
-        // // Task B: Word Stats
-        // wordStatsActor.tell(
-        // new AnalyzeWords(currentQuery),
-        // getSelf()
-        // );
-        //
-        // // Task C: News Sources
-        // newsSourcesActor.tell(
-        // new FetchSources(null, null, null),
-        // getSelf()
-        // );
-        //
-        // // Task D: Sentiment Analysis
-        // sentimentAnalysisActor.tell(
-        // new AnalyzeSentiment(articles),
-        // getSelf()
-        // );
-        //
+
+        // Task D: Sentiment Analysis
+        sentimentAnalysisActor.tell(
+                new AnalyzeSentiment(articles),
+                getSelf()
+        );
+
         // Task E: Readability
         readabilityActor.tell(
                 new AnalyzeReadability(articles),

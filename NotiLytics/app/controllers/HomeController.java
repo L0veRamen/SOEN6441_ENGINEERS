@@ -55,6 +55,7 @@ public class HomeController extends Controller {
     private final SourcesService sourcesService;
     private final NewsApiClient newsApiClient;
     private final ReadabilityService readabilityService;
+    private final SentimentAnalysisService sentimentAnalysisService;
     /**
      * Constructor with dependency injection.
      * Injects all required services for controller operations.
@@ -76,7 +77,8 @@ public class HomeController extends Controller {
             WordStatsService wordStatsService,
             SourcesService sourcesService,
             NewsApiClient newsApiClient,
-            ReadabilityService readabilityService){
+            ReadabilityService readabilityService,
+            SentimentAnalysisService sentimentAnalysisService){
         this.actorSystem = actorSystem;
         this.materializer = materializer;
         this.searchService = searchService;
@@ -86,6 +88,7 @@ public class HomeController extends Controller {
         this.sourcesService = sourcesService;
         this.newsApiClient = newsApiClient;
         this.readabilityService = readabilityService;
+        this.sentimentAnalysisService = sentimentAnalysisService;
     }
 
     /**
@@ -310,7 +313,8 @@ public class HomeController extends Controller {
                             historyService, // ADDED: History persistence service
                             newsApiClient,
                             profileService,
-                            readabilityService
+                            readabilityService,
+                            sentimentAnalysisService
                     ),
                     actorSystem,
                     materializer

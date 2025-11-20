@@ -69,6 +69,8 @@ public class HomeControllerTest {
 
     @Mock
     private ReadabilityService readabilityService;
+    @Mock
+    private SentimentAnalysisService sentimentService;
 
     private HomeController controller;
     private SearchBlock sampleBlock;
@@ -105,7 +107,8 @@ public class HomeControllerTest {
                 wordStatsService,
                 sourcesService,
                 newsApiClient,
-                readabilityService
+                readabilityService,
+                sentimentService
         );
         sampleBlock = new SearchBlock(
                 "java",
@@ -824,10 +827,10 @@ public class HomeControllerTest {
     }
 
 // ==================== NEWS SOURCES TESTS ====================
-    
-    /** 
+
+    /**
      * @description:  Tests that when no filters are provided, the controller calls listSources() with empty Optionals and renders successfully.
-     * @param: 
+     * @param:
      * @return: void
      * @author yang
      * @date: 2025-10-30 12:50
@@ -853,10 +856,10 @@ public class HomeControllerTest {
         verify(sourcesService).getFacets();
         verify(sourcesService).listSources(eq(Optional.empty()), eq(Optional.empty()), eq(Optional.empty()));
     }
-    
-    /** 
+
+    /**
      * @description: Tests that uppercase filters (country, category, language) are converted to lowercase before calling the service.
-     * @param: 
+     * @param:
      * @return: void
      * @author yang
      * @date: 2025-10-30 12:50
@@ -882,9 +885,9 @@ public class HomeControllerTest {
         verify(sourcesService).listSources(eq(Optional.of("us")), eq(Optional.of("business")), eq(Optional.of("en")));
     }
 
-    /** 
+    /**
      * @description: Tests that the controller renders correctly even when listSources() returns an empty result list.
-     * @param: 
+     * @param:
      * @return: void
      * @author yang
      * @date: 2025-10-30 12:50

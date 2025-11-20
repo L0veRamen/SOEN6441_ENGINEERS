@@ -34,7 +34,7 @@
    /**
    * Get or create session ID from localStorage
    * This ensures the same sessionId persists across tabs and navigation
-   * 
+   *
    * @returns {string} Session ID
    * @author Group Members
    */
@@ -371,11 +371,11 @@
 
     // Sentiment analytics
     if (currentSentiment && currentSentiment.sentiment) {
+      const sentimentEmoji = getSentimentEmoji(currentSentiment.sentiment);
+
       analyticsHtml += `
-                <span class="analytics-inline sentiment">
-                    💬 Sentiment: <span class="analytics-value">${
-                      currentSentiment.description || currentSentiment.sentiment
-                    }</span>
+                <span class="analytics-inline">
+                    ${sentimentEmoji} Sentiment: <span class="analytics-value">${currentSentiment.sentiment}</span>
                 </span>
             `;
     }
@@ -627,6 +627,20 @@
       };
       updateSearchInfo(currentData);
     }
+  }
+
+  /**
+   * Get emoji for sentiment type
+   * @param {string} sentiment Sentiment type (POSITIVE, NEGATIVE, NEUTRAL)
+   * @returns {string} Emoji representation
+   * @author Group Members
+   */
+  function getSentimentEmoji(sentiment) {
+    if (!sentiment) return "❓";
+    const upper = sentiment.toUpperCase();
+    if (upper === "POSITIVE") return "😊";
+    if (upper === "NEGATIVE") return "😞";
+    return "😐";
   }
 
   /**
