@@ -116,7 +116,7 @@ public class SentimentAnalysisService {
      * @param wordList list of words to analyze
      * @return the detected {@link Sentiment}
      */
-    public static Sentiment analyzeWordList(List<String> wordList) {
+    public Sentiment analyzeWordList(List<String> wordList) {
         if (wordList == null || wordList.isEmpty()) {
 //            log.debug("Word list is null or empty");
             return Sentiment.NEUTRAL;
@@ -157,7 +157,7 @@ public class SentimentAnalysisService {
      * @param articles list of articles to analyze
      * @return overall {@link Sentiment} classification
      */
-    public static Sentiment analyzeArticles(List<Article> articles) {
+    public Sentiment analyzeArticles(List<Article> articles) {
         if (articles == null || articles.isEmpty()) {
             return Sentiment.NEUTRAL;
         }

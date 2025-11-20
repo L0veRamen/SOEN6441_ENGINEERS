@@ -58,6 +58,7 @@ public class SentimentAnalysisActorTest {
                 new Article("Title 2", "https://example.com/2", "Neutral content",
                         "src-2", "Source Two", "2025-01-01T00:05:00Z")
         );
+        when(sentimentService.analyzeWordList(anyList())).thenReturn(Sentiment.POSITIVE);
 
         ActorRef actor = system.actorOf(SentimentAnalysisActor.props(sentimentService));
         TestKit probe = new TestKit(system);
@@ -96,11 +97,55 @@ public class SentimentAnalysisActorTest {
     }
 
     @Test
+    public void handleAnalyzeSentiment_nullArticles_returnsFallback() {
+        ActorRef actor = system.actorOf(SentimentAnalysisActor.props(sentimentService));
+        TestKit probe = new TestKit(system);
+
+        AnalyzeSentiment message = mock(AnalyzeSentiment.class);
+        when(message.articles()).thenReturn(null);
+
+        actor.tell(message, probe.getRef());
+
+        TaskResult result = probe.expectMsgClass(Duration.ofSeconds(3), TaskResult.class);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) result.data();
+
+        assertEquals(Sentiment.NEUTRAL.toString(), data.get("sentiment"));
+        assertFalse((Boolean) data.get("isValid"));
+        assertEquals("Failed to compute sentiment", data.get("error"));
+        verifyNoInteractions(sentimentService);
+    }
+
+    @Test
     public void handleAnalyzeSentiment_serviceFailure_returnsFallback() {
         List<Article> articles = List.of(
                 new Article("Title 1", "https://example.com/1", "Content",
                         "src-1", "Source One", "2025-01-01T00:00:00Z")
         );
+        when(sentimentService.analyzeWordList(anyList()))
+                .thenThrow(new RuntimeException("boom"));
+
+        ActorRef actor = system.actorOf(SentimentAnalysisActor.props(sentimentService));
+        TestKit probe = new TestKit(system);
+
+        actor.tell(new AnalyzeSentiment(articles), probe.getRef());
+
+        TaskResult result = probe.expectMsgClass(Duration.ofSeconds(3), TaskResult.class);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) result.data();
+
+        assertEquals(Sentiment.NEUTRAL.toString(), data.get("sentiment"));
+        assertFalse((Boolean) data.get("isValid"));
+        assertEquals("Failed to compute sentiment", data.get("error"));
+    }
+
+    @Test
+    public void handleAnalyzeSentiment_nullSentimentFromService_returnsFallback() {
+        List<Article> articles = List.of(
+                new Article("Title 1", "https://example.com/1", "Content",
+                        "src-1", "Source One", "2025-01-01T00:00:00Z")
+        );
+        when(sentimentService.analyzeWordList(anyList())).thenReturn(null);
 
         ActorRef actor = system.actorOf(SentimentAnalysisActor.props(sentimentService));
         TestKit probe = new TestKit(system);
@@ -116,4 +161,3 @@ public class SentimentAnalysisActorTest {
         assertEquals("Failed to compute sentiment", data.get("error"));
     }
 }
-

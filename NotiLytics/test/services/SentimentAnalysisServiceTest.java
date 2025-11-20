@@ -36,41 +36,41 @@ public class SentimentAnalysisServiceTest {
     @Test
     public void testAnalyzeWordListWithStrongPositive() {
         List<String> words = Arrays.asList("happy", "excellent", "wonderful", "amazing", "fantastic");
-        assertEquals(Sentiment.POSITIVE, SentimentAnalysisService.analyzeWordList(words));
+        assertEquals(Sentiment.POSITIVE, sentimentAnalysisService.analyzeWordList(words));
     }
 
     @Test
     public void testAnalyzeWordListWithStrongNegative() {
         List<String> words = Arrays.asList("terrible", "horrible", "awful", "disaster", "crisis");
-        assertEquals(Sentiment.NEGATIVE, SentimentAnalysisService.analyzeWordList(words));
+        assertEquals(Sentiment.NEGATIVE, sentimentAnalysisService.analyzeWordList(words));
     }
 
     @Test
     public void testAnalyzeWordListWithMixedSentimentMoreNegative() {
         List<String> words = Arrays.asList("happy", "terrible", "horrible", "awful", "disaster");
-        assertEquals(Sentiment.NEGATIVE, SentimentAnalysisService.analyzeWordList(words));
+        assertEquals(Sentiment.NEGATIVE, sentimentAnalysisService.analyzeWordList(words));
     }
 
     @Test
     public void testAnalyzeWordListWithEqualSentiment() {
         List<String> words = Arrays.asList("happy", "good", "sad", "bad");
-        assertEquals(Sentiment.NEUTRAL, SentimentAnalysisService.analyzeWordList(words));
+        assertEquals(Sentiment.NEUTRAL, sentimentAnalysisService.analyzeWordList(words));
     }
 
     @Test
     public void testAnalyzeWordListWithNeutralWords() {
         List<String> words = Arrays.asList("the", "quick", "brown", "fox", "jumps");
-        assertEquals(Sentiment.NEUTRAL, SentimentAnalysisService.analyzeWordList(words));
+        assertEquals(Sentiment.NEUTRAL, sentimentAnalysisService.analyzeWordList(words));
     }
 
     @Test
     public void testAnalyzeWordListWithEmptyList() {
-        assertEquals(Sentiment.NEUTRAL, SentimentAnalysisService.analyzeWordList(Collections.emptyList()));
+        assertEquals(Sentiment.NEUTRAL, sentimentAnalysisService.analyzeWordList(Collections.emptyList()));
     }
 
     @Test
     public void testAnalyzeWordListWithNull() {
-        assertEquals(Sentiment.NEUTRAL, SentimentAnalysisService.analyzeWordList(null));
+        assertEquals(Sentiment.NEUTRAL, sentimentAnalysisService.analyzeWordList(null));
     }
 
     // Article Analysis Tests
@@ -82,7 +82,7 @@ public class SentimentAnalysisServiceTest {
         Article article2 = new Article("Test2", "https://example.com/1", "The project was a fantastic success with great achievements",
                 "source-1", "Source", "2024-01-01T00:00:00Z");
         List<Article> articles = Arrays.asList(article1, article2);
-        assertEquals(Sentiment.POSITIVE, SentimentAnalysisService.analyzeArticles(articles));
+        assertEquals(Sentiment.POSITIVE, sentimentAnalysisService.analyzeArticles(articles));
     }
 
     @Test
@@ -90,7 +90,7 @@ public class SentimentAnalysisServiceTest {
         Article article1 = new Article("Test1", "https://example.com/1", "This is terrible and horrible news with awful outcome","source-1", "Source", "2024-01-01T00:00:00Z");
         Article article2 = new Article("Test2", "https://example.com/1", "The project was a complete disaster with critical failures", "source-1", "Source", "2024-01-01T00:00:00Z");
         List<Article> articles = Arrays.asList(article1, article2);
-        assertEquals(Sentiment.NEGATIVE, SentimentAnalysisService.analyzeArticles(articles));
+        assertEquals(Sentiment.NEGATIVE, sentimentAnalysisService.analyzeArticles(articles));
     }
 
     @Test
@@ -98,38 +98,38 @@ public class SentimentAnalysisServiceTest {
         Article article1 = new Article("Test1", "url", "This is wonderful and amazing news", "author", "source", "date");
         Article article2 = new Article("Test2", "url", "This is terrible and horrible news", "author", "source", "date");
         List<Article> articles = Arrays.asList(article1, article2);
-        assertEquals(Sentiment.NEUTRAL, SentimentAnalysisService.analyzeArticles(articles));
+        assertEquals(Sentiment.NEUTRAL, sentimentAnalysisService.analyzeArticles(articles));
     }
 
     @Test
     public void testAnalyzeArticlesWithNeutralContent() {
         Article article = new Article("Test", "url", "This is a regular news article about general topics", "author", "source", "date");
         List<Article> articles = Collections.singletonList(article);
-        assertEquals(Sentiment.NEUTRAL, SentimentAnalysisService.analyzeArticles(articles));
+        assertEquals(Sentiment.NEUTRAL, sentimentAnalysisService.analyzeArticles(articles));
     }
 
     @Test
     public void testAnalyzeArticlesWithEmptyContent() {
         Article article = new Article("Test", "url", "", "author", "source", "date");
         List<Article> articles = Collections.singletonList(article);
-        assertEquals(Sentiment.NEUTRAL, SentimentAnalysisService.analyzeArticles(articles));
+        assertEquals(Sentiment.NEUTRAL, sentimentAnalysisService.analyzeArticles(articles));
     }
 
     @Test
     public void testAnalyzeArticlesWithNullContent() {
         Article article = new Article("Test", "url", null, "author", "source", "date");
         List<Article> articles = Collections.singletonList(article);
-        assertEquals(Sentiment.NEUTRAL, SentimentAnalysisService.analyzeArticles(articles));
+        assertEquals(Sentiment.NEUTRAL, sentimentAnalysisService.analyzeArticles(articles));
     }
 
     @Test
     public void testAnalyzeArticlesWithEmptyList() {
-        assertEquals(Sentiment.NEUTRAL, SentimentAnalysisService.analyzeArticles(Collections.emptyList()));
+        assertEquals(Sentiment.NEUTRAL, sentimentAnalysisService.analyzeArticles(Collections.emptyList()));
     }
 
     @Test
     public void testAnalyzeArticlesWithNull() {
-        assertEquals(Sentiment.NEUTRAL, SentimentAnalysisService.analyzeArticles(null));
+        assertEquals(Sentiment.NEUTRAL, sentimentAnalysisService.analyzeArticles(null));
     }
 
     @Test
@@ -138,7 +138,7 @@ public class SentimentAnalysisServiceTest {
             new Article("Test1", "url", null, "author", "source", "date"),
             new Article("Test2", "url", null, "author", "source", "date")
         );
-        assertEquals(Sentiment.NEUTRAL, SentimentAnalysisService.analyzeArticles(articles));
+        assertEquals(Sentiment.NEUTRAL, sentimentAnalysisService.analyzeArticles(articles));
     }
 
     @Test
@@ -161,13 +161,13 @@ public class SentimentAnalysisServiceTest {
                     "2024-01-01T00:00:00Z"
             )
         );
-        assertEquals(Sentiment.POSITIVE, SentimentAnalysisService.analyzeArticles(articles));
+        assertEquals(Sentiment.POSITIVE, sentimentAnalysisService.analyzeArticles(articles));
     }
 
     @Test
     public void testAnalyzeWordListWithSpecialCharacters() {
         List<String> words = Arrays.asList("happy!", "good?", "excellent.", ":-)", "😊");
-        assertEquals(Sentiment.POSITIVE, SentimentAnalysisService.analyzeWordList(words));
+        assertEquals(Sentiment.POSITIVE, sentimentAnalysisService.analyzeWordList(words));
     }
 
     @Test
@@ -178,6 +178,6 @@ public class SentimentAnalysisServiceTest {
         }
         Article article = new Article("Test", "url", longContent.toString(), "author", "source", "date");
         List<Article> articles = Collections.singletonList(article);
-        assertEquals(Sentiment.POSITIVE, SentimentAnalysisService.analyzeArticles(articles));
+        assertEquals(Sentiment.POSITIVE, sentimentAnalysisService.analyzeArticles(articles));
     }
 }

@@ -29,6 +29,7 @@ public class SearchService {
 
     private final NewsApiClient newsApiClient;
     private final ReadabilityService readabilityService;  // ADDED for Task E
+    private final SentimentAnalysisService sentimentAnalysisService;
 
     /**
      * Constructor with dependency injection
@@ -38,9 +39,12 @@ public class SearchService {
      * @author Chen Qian
      */
     @Inject
-    public SearchService(NewsApiClient newsApiClient, ReadabilityService readabilityService) {
+    public SearchService(NewsApiClient newsApiClient,
+                         ReadabilityService readabilityService,
+                         SentimentAnalysisService sentimentAnalysisService) {
         this.newsApiClient = newsApiClient;
         this.readabilityService = readabilityService;  // ADDED for Task E
+        this.sentimentAnalysisService = sentimentAnalysisService;
     }
 
     /**
@@ -65,7 +69,7 @@ public class SearchService {
                             .map(readabilityService::calculateArticleReadability)
                             .collect(Collectors.toList());
 
-                    Sentiment articleSentiment = SentimentAnalysisService.analyzeArticles(response.articles());
+                    Sentiment articleSentiment = sentimentAnalysisService.analyzeArticles(response.articles());
 
                     return new SearchBlock(
                             query,

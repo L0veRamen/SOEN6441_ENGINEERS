@@ -61,6 +61,7 @@ package services;
 
 import models.Article;
 import models.ReadabilityScores;
+import models.Sentiment;
 import models.SearchBlock;
 import org.junit.Before;
 import org.junit.Test;
@@ -91,6 +92,8 @@ public class SearchServiceTest {
     private ReadabilityService readabilityService;
 
     private SearchService service;
+    @Mock
+    private SentimentAnalysisService sentimentService;
 
     /**
      * Set up test fixtures
@@ -100,7 +103,8 @@ public class SearchServiceTest {
     @Before
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        service = new SearchService(newsApiClient, readabilityService);
+        service = new SearchService(newsApiClient, readabilityService, sentimentService);
+        when(sentimentService.analyzeArticles(anyList())).thenReturn(Sentiment.NEUTRAL);
     }
 
     /**

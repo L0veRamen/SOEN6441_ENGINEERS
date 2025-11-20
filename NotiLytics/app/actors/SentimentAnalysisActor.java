@@ -113,7 +113,10 @@ public class SentimentAnalysisActor extends AbstractActor {
                     .toList();
 
             // Call D1 service (static method - synchronous)
-            Sentiment overallSentiment = SentimentAnalysisService.analyzeWordList(allWords);
+            Sentiment overallSentiment = sentimentService.analyzeWordList(allWords);
+            if (overallSentiment == null) {
+                throw new IllegalStateException("Sentiment result cannot be null");
+            }
 
             // Build result data - only overall sentiment
             Map<String, Object> data = new HashMap<>();
@@ -155,4 +158,3 @@ public class SentimentAnalysisActor extends AbstractActor {
         );
     }
 }
-

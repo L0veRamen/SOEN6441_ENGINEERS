@@ -24,7 +24,9 @@ import java.net.ConnectException;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -139,6 +141,7 @@ public class UserActorTest {
                 .thenReturn(CompletableFuture.completedFuture(new ProfileService.SourceProfileResult(profile1, new ArrayList<>())));
         // By default, no persisted history for a session in tests
         when(historyService.list(anyString())).thenReturn(List.of());
+        when(sentimentService.analyzeWordList(anyList())).thenReturn(Sentiment.NEUTRAL);
     }
 
     @After
@@ -172,14 +175,9 @@ public class UserActorTest {
         assertEquals(1, historyData.get("count").asInt());
         assertEquals(10, historyData.get("maxHistory").asInt());
 
-        JsonNode profile = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
-        assertEquals("sourceProfile", profile.get("type").asText());
-
-        JsonNode sentiment = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
-        assertEquals("sentiment", profile.get("type").asText());
-
-        JsonNode readabilityMessage = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
-        assertEquals("readability", readabilityMessage.get("type").asText());
+        Map<String, JsonNode> initialTasks = expectTaskMessages(socketProbe, true);
+        JsonNode readabilityMessage = initialTasks.get("readability");
+        assertNotNull(readabilityMessage);
         assertEquals(7.2, readabilityMessage.get("data").get("gradeLevel").asDouble(), 0.01);
 
         userActor.tell(new UserActor.UpdateCheck(), ActorRef.noSender());
@@ -188,7 +186,9 @@ public class UserActorTest {
         assertEquals("append", appendMessage.get("type").asText());
         assertEquals(1, appendMessage.get("data").get("count").asInt());
 
-        JsonNode updatedReadability = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        Map<String, JsonNode> updateTasks = expectTaskMessages(socketProbe, false);
+        JsonNode updatedReadability = updateTasks.get("readability");
+        assertNotNull(updatedReadability);
         assertEquals(5.5, updatedReadability.get("data").get("gradeLevel").asDouble(), 0.01);
 
         verify(searchService, times(2)).search("ai", "relevancy");
@@ -267,14 +267,7 @@ public class UserActorTest {
         JsonNode historyMessage = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
         assertEquals("history", historyMessage.get("type").asText());
 
-        JsonNode profile = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
-        assertEquals("sourceProfile", profile.get("type").asText());
-
-        JsonNode sentiment = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
-        assertEquals("sentiment", profile.get("type").asText());
-
-        JsonNode readability = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
-        assertEquals("readability", readability.get("type").asText());
+        expectTaskMessages(socketProbe, true);
 
         ObjectNode stop = mapper.createObjectNode();
         stop.put("type", "stop_search");
@@ -458,11 +451,9 @@ public class UserActorTest {
         // Perform 11 searches to exceed MAX_HISTORY (10)
         IntStream.rangeClosed(0, 10).forEach(index -> {
             sendStartSearch(userActor, "q" + index, "relevancy");
-            // Drain the three messages produced per search:
-            // initial_results, history, readability
-            socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
-            socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
-            socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+            expectMessageOfType(socketProbe, "initial_results");
+            expectMessageOfType(socketProbe, "history");
+            expectTaskMessages(socketProbe, true);
         });
 
         // Request history and assert that only the 10 most recent searches remain
@@ -495,15 +486,14 @@ public class UserActorTest {
 
         // Perform a couple of searches to populate in-actor history
         sendStartSearch(userActor, "q1", "relevancy");
-        // Drain the three messages: initial_results, history, readability
-        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
-        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
-        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        expectMessageOfType(socketProbe, "initial_results");
+        expectMessageOfType(socketProbe, "history");
+        expectTaskMessages(socketProbe, true);
 
         sendStartSearch(userActor, "q2", "relevancy");
-        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
-        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
-        socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        expectMessageOfType(socketProbe, "initial_results");
+        expectMessageOfType(socketProbe, "history");
+        expectTaskMessages(socketProbe, true);
 
         // Request history over WebSocket
         ObjectNode historyRequest = mapper.createObjectNode();
@@ -695,6 +685,31 @@ public class UserActorTest {
         assertEquals(10, history.size());
         assertEquals("q11", history.get(0).query());
         assertEquals("q2", history.get(9).query());
+    }
+
+    private JsonNode expectMessageOfType(TestKit probe, String expectedType) {
+        JsonNode message = probe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals(expectedType, message.get("type").asText());
+        return message;
+    }
+
+    private Map<String, JsonNode> expectTaskMessages(TestKit probe, boolean includeSourceProfile) {
+        if (includeSourceProfile) {
+            return drainMessagesByType(probe, "sourceProfile", "sentiment", "readability");
+        }
+        return drainMessagesByType(probe, "sentiment", "readability");
+    }
+
+    private Map<String, JsonNode> drainMessagesByType(TestKit probe, String... expectedTypes) {
+        Map<String, JsonNode> messagesByType = new HashMap<>();
+        List<String> pending = new ArrayList<>(List.of(expectedTypes));
+        for (int i = 0; i < expectedTypes.length; i++) {
+            JsonNode message = probe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+            String type = message.get("type").asText();
+            assertTrue("Unexpected message type: " + type, pending.remove(type));
+            messagesByType.put(type, message);
+        }
+        return messagesByType;
     }
 
     private ActorRef spawnUserActor(TestKit socketProbe) {
