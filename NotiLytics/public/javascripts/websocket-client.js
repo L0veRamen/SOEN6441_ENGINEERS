@@ -8,10 +8,12 @@
   "use strict";
 
   let ws;
+  let sessionId; // Store sessionId
   let liveArticles = [];
   let currentReadability = null;
   let currentSentiment = null;
   let currentArticleReadability = [];
+  let currentQueryText = "";
 
   const elements = {
     wsQuery: document.getElementById("ws-query"),
@@ -29,13 +31,63 @@
     sourcesPanel: document.getElementById("sources-panel"),
   };
 
+   /**
+   * Get or create session ID from localStorage
+   * This ensures the same sessionId persists across tabs and navigation
+   * 
+   * @returns {string} Session ID
+   * @author Group Members
+   */
+  function getOrCreateSessionId() {
+    const serverSessionId =
+      (document.body && document.body.dataset
+        ? document.body.dataset.sessionId
+        : null) || window.NOTILYTICS_SESSION_ID;
+
+    // Try to get existing sessionId from localStorage
+    let storedSessionId = localStorage.getItem("notilytics_session_id");
+
+    if (serverSessionId && storedSessionId !== serverSessionId) {
+      storedSessionId = serverSessionId;
+      localStorage.setItem("notilytics_session_id", storedSessionId);
+      console.log("[Session] Synced with server session:", storedSessionId);
+    }
+
+    if (!storedSessionId) {
+      // Generate new UUID
+      storedSessionId = generateUUID();
+      localStorage.setItem("notilytics_session_id", storedSessionId);
+      console.log("[Session] Created new session:", storedSessionId);
+    } else {
+      console.log("[Session] Reusing existing session:", storedSessionId);
+    }
+
+    return storedSessionId;
+  }
+
+  /**
+   * Generate a UUID v4
+   * @returns {string} UUID string
+   * @author Group Members
+   */
+  function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
   /**
    * Initialize WebSocket connection
    * @author Group Members
    */
   function initWebSocket() {
+    // Get or create sessionId BEFORE connecting
+    sessionId = getOrCreateSessionId();
+
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const wsUrl = `${protocol}//${window.location.host}/ws?sessionId=${sessionId}`;
 
     console.log("[WebSocket] Connecting to:", wsUrl);
     updateStatus("connecting", "Connecting...");
@@ -53,7 +105,7 @@
    * @author Group Members
    */
   function handleOpen() {
-    console.log("[WebSocket] Connected");
+    console.log("[WebSocket] Connected with session:", sessionId);
     updateStatus("connected", "Connected");
 
     // Enable controls
@@ -142,11 +194,11 @@
     elements.startBtn.disabled = true;
     elements.stopBtn.disabled = true;
 
-    // Attempt reconnection after 3 seconds
+    // Attempt reconnection after 3 seconds (will reuse same sessionId)
     setTimeout(() => {
-      console.log("[WebSocket] Attempting reconnection...");
+      console.log("[WebSocket] Attempting reconnection with session:", sessionId);
       initWebSocket();
-    }, 3000);
+  }, 3000);
   }
 
   /**
@@ -188,6 +240,7 @@
     }
 
     console.log("[Search] Starting:", query, sortBy);
+    currentQueryText = query;
     updateStatus("searching", `Searching for "${query}"...`);
 
     // Clear previous results
@@ -242,6 +295,14 @@
   function handleInitialResults(data) {
     console.log("[Results] Initial results received:", data.count);
 
+    if (data.query) {
+      currentQueryText = data.query;
+      elements.wsQuery.value = data.query;
+    }
+    if (data.sortBy) {
+      elements.wsSortBy.value = data.sortBy;
+    }
+
     // Store analytics data
     currentReadability = data.readability;
     currentSentiment = data.sentiment;
@@ -249,6 +310,10 @@
 
     // Build search info with INLINE analytics
     updateSearchInfo(data);
+
+    // Ensure results container is visible when initial results arrive,
+    // even if this search was started automatically (e.g. after navigation).
+    elements.liveResults.classList.add("show");
 
     // Clear and populate articles
     elements.articlesContainer.innerHTML = "";
@@ -269,10 +334,15 @@
    * @author Chen Qian
    */
   function updateSearchInfo(data) {
-    const query = escapeHtml(data.query);
+    if (data.query) {
+      currentQueryText = data.query;
+    }
+    const query = escapeHtml(currentQueryText);
     const totalResults = data.totalResults || 0;
     const sortBy = data.sortBy || "publishedAt";
-    const count = data.count || 0;
+    const count =
+      (data.articles && data.articles.length) ||
+      (typeof data.count === "number" ? data.count : 0);
 
     // Build analytics inline spans
     let analyticsHtml = "";
@@ -488,13 +558,20 @@
                     <span>📊 ${search.totalResults} results</span>
                     <span style="margin-left: 1rem;">🔄 ${search.sortBy}</span>
                     <span style="margin-left: 1rem;">⏱️ ${
-                      search.createdAt
+                      search.createdAtIso || ""
                     }</span>
                 </div>
             </div>
         `
       )
       .join("");
+
+    // If we have history but no live results yet (e.g. after navigation),
+    // automatically replay the most recent search.
+    if (liveArticles.length === 0 && searches.length > 0) {
+      const latest = searches[0];
+      replaySearch(latest.query, latest.sortBy || "publishedAt");
+    }
   }
 
   /**
@@ -522,7 +599,7 @@
 
       // Rebuild search info with updated readability
       const currentData = {
-        query: elements.wsQuery.value,
+        query: currentQueryText,
         totalResults: liveArticles.length,
         sortBy: elements.wsSortBy.value,
         count: liveArticles.length,
@@ -543,7 +620,7 @@
 
       // Rebuild search info with updated sentiment
       const currentData = {
-        query: elements.wsQuery.value,
+        query: currentQueryText,
         totalResults: liveArticles.length,
         sortBy: elements.wsSortBy.value,
         count: liveArticles.length,

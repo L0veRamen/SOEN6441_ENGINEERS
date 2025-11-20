@@ -914,4 +914,56 @@ public class HomeControllerTest {
         WebSocket socket = controller.socket();
         assertNotNull(socket);
     }
+
+    @Test
+    public void getQueryParamReturnsFirstValueWhenPresent() throws Exception {
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/ws?sessionId=abc&sessionId=def")
+                .build();
+
+        java.lang.reflect.Method method = HomeController.class.getDeclaredMethod(
+                "getQueryParam", Http.RequestHeader.class, String.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        Optional<String> value = (Optional<String>) method.invoke(controller, request, "sessionId");
+
+        assertTrue(value.isPresent());
+        assertEquals("abc", value.get());
+    }
+
+    @Test
+    public void getQueryParamReturnsEmptyWhenMissing() throws Exception {
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/ws")
+                .build();
+
+        java.lang.reflect.Method method = HomeController.class.getDeclaredMethod(
+                "getQueryParam", Http.RequestHeader.class, String.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        Optional<String> value = (Optional<String>) method.invoke(controller, request, "sessionId");
+
+        assertFalse(value.isPresent());
+    }
+
+    @Test
+    public void getQueryParamHandlesEmptyArray() throws Exception {
+        Http.RequestHeader header = mock(Http.RequestHeader.class);
+        when(header.queryString()).thenReturn(java.util.Map.of(
+                "sessionId", new String[]{}));
+
+        java.lang.reflect.Method method = HomeController.class.getDeclaredMethod(
+                "getQueryParam", Http.RequestHeader.class, String.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        Optional<String> value =
+                (Optional<String>) method.invoke(controller, header, "sessionId");
+
+        assertFalse(value.isPresent());
+    }
 }

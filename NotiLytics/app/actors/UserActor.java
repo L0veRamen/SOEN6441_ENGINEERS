@@ -63,6 +63,7 @@ public class UserActor extends AbstractActor {
     private final ObjectMapper mapper;
     private final ProfileService profileService;
     private final ReadabilityService readabilityService;
+    private final SearchHistoryService historyService;
 
     // ========== SESSION STATE (IN-MEMORY) ==========
     private final List<SearchBlock> searchHistory;
@@ -81,22 +82,26 @@ public class UserActor extends AbstractActor {
     /**
      * Constructor (called by Pekko)
      *
-     * @param out           WebSocket output reference
-     * @param sessionId     Session identifier
-     * @param searchService Search service
-     * @param newsApiClient NewsAPI client
+     * @param out                WebSocket output reference
+     * @param sessionId          Session identifier
+     * @param searchService      Search service
+     * @param historyService     Search history persistence service
+     * @param newsApiClient      NewsAPI client
+     * @param readabilityService Readability analysis service
      * @author Group Members
      */
     public UserActor(
             ActorRef out,
             String sessionId,
             SearchService searchService,
+            SearchHistoryService historyService,
             NewsApiClient newsApiClient,
             ProfileService profileService,
             ReadabilityService readabilityService) {
         this.out = out;
         this.sessionId = sessionId;
         this.searchService = searchService;
+        this.historyService = historyService;
         this.newsApiClient = newsApiClient;
         this.mapper = new ObjectMapper();
         this.profileService = profileService;
@@ -115,10 +120,12 @@ public class UserActor extends AbstractActor {
     /**
      * Props factory method for creating UserActor
      *
-     * @param out           WebSocket output reference
-     * @param sessionId     Session identifier
-     * @param searchService Search orchestration service
-     * @param newsApiClient NewsAPI HTTP client
+     * @param out                WebSocket output reference
+     * @param sessionId          Session identifier
+     * @param searchService      Search orchestration service
+     * @param historyService     Search history persistence service
+     * @param newsApiClient      NewsAPI HTTP client
+     * @param readabilityService Readability analysis service
      * @return Props for actor creation
      * @author Group Members
      */
@@ -126,6 +133,7 @@ public class UserActor extends AbstractActor {
             ActorRef out,
             String sessionId,
             SearchService searchService,
+            SearchHistoryService historyService,
             NewsApiClient newsApiClient,
             ProfileService profileService,
             ReadabilityService readabilityService) {
@@ -134,6 +142,7 @@ public class UserActor extends AbstractActor {
                 out,
                 sessionId,
                 searchService,
+                historyService,
                 newsApiClient,
                 profileService,
                 readabilityService);
@@ -247,6 +256,18 @@ public class UserActor extends AbstractActor {
         log.info(
                 "UserActor created 5 supervised children for session: {}",
                 sessionId);
+
+        // Load existing history from cache and replay latest search (if any)
+        List<SearchBlock> persistedHistory = historyService.list(sessionId);
+        if (!persistedHistory.isEmpty()) {
+            searchHistory.addAll(persistedHistory);
+            log.info("Loaded {} existing searches from cache for session {}",
+                    persistedHistory.size(), sessionId);
+            SearchBlock latest = persistedHistory.get(0);
+            replayLatestSearch(latest);
+        } else {
+            log.info("No existing history found in cache for session {}", sessionId);
+        }
     }
 
     /**
@@ -365,16 +386,7 @@ public class UserActor extends AbstractActor {
                     log.info("Initial results received for session {}: {} articles",
                             sessionId, searchBlock.articles().size());
 
-                    // Send initial results immediately
-                    sendToWebSocket("initial_results", Map.of(
-                            "query", searchBlock.query(),
-                            "sortBy", searchBlock.sortBy(),
-                            "totalResults", searchBlock.totalResults(),
-                            "articles", searchBlock.articles(),
-                            "timestamp", searchBlock.createdAtIso(),
-                            "readability", searchBlock.readability(), // overall average
-                            "articleReadability", searchBlock.articleReadability(), // per-article scores
-                            "sentiment", searchBlock.articleSentiment()));
+                    sendInitialResults(searchBlock);
 
                     // Add to history (max 10, FIFO)
                     addToHistory(searchBlock);
@@ -382,11 +394,7 @@ public class UserActor extends AbstractActor {
                     // AUTO-UPDATE: Send updated history to the client
                     sendHistory();
 
-                    // Track seen URLs (bounded LRU)
-                    searchBlock.articles().forEach(article -> seenUrls.add(article.url()));
-
-                    log.debug("Tracked {} URLs for dedup in session {}",
-                            seenUrls.size(), sessionId);
+                    trackSeenUrls(searchBlock.articles());
 
                     // Trigger individual task analysis (include source profile on initial load)
                     triggerTaskAnalysis(searchBlock.articles(), true);
@@ -461,8 +469,7 @@ public class UserActor extends AbstractActor {
                         log.info("Found {} new article(s) for session {}",
                                 newArticles.size(), sessionId);
 
-                        // Track new URLs
-                        newArticles.forEach(article -> seenUrls.add(article.url()));
+                        trackSeenUrls(newArticles);
 
                         // Send to the client
                         sendToWebSocket("append", Map.of(
@@ -618,13 +625,18 @@ public class UserActor extends AbstractActor {
      * @author Group Members
      */
     private void addToHistory(SearchBlock searchBlock) {
-        searchHistory.addFirst(searchBlock); // Add to front (newest first)
+        // Add to front (newest first)
+        searchHistory.add(0, searchBlock);
 
         if (searchHistory.size() > MAX_HISTORY) {
             searchHistory.remove(MAX_HISTORY); // Remove oldest
             log.debug("Removed oldest search from history for session {}",
                     sessionId);
         }
+
+        // Persist to cache (survives actor restart) so that
+        // history can be restored across WebSocket reconnections.
+        historyService.push(sessionId, searchBlock);
 
         log.debug("History size for session {}: {}/{}",
                 sessionId, searchHistory.size(), MAX_HISTORY);
@@ -686,6 +698,39 @@ public class UserActor extends AbstractActor {
                 "searches", searchHistory,
                 "count", searchHistory.size(),
                 "maxHistory", MAX_HISTORY));
+    }
+
+    private void replayLatestSearch(SearchBlock latest) {
+        log.info("Replaying cached search '{}' for session {}", latest.query(), sessionId);
+        restoreStateFrom(latest);
+        sendInitialResults(latest);
+        sendHistory();
+        triggerTaskAnalysis(latest.articles(), true);
+        scheduleUpdates();
+    }
+
+    private void restoreStateFrom(SearchBlock block) {
+        this.currentQuery = block.query();
+        this.currentSortBy = block.sortBy();
+        this.seenUrls.clear();
+        trackSeenUrls(block.articles());
+    }
+
+    private void sendInitialResults(SearchBlock searchBlock) {
+        sendToWebSocket("initial_results", Map.of(
+                "query", searchBlock.query(),
+                "sortBy", searchBlock.sortBy(),
+                "totalResults", searchBlock.totalResults(),
+                "articles", searchBlock.articles(),
+                "timestamp", searchBlock.createdAtIso(),
+                "readability", searchBlock.readability(),
+                "articleReadability", searchBlock.articleReadability(),
+                "sentiment", searchBlock.articleSentiment()));
+    }
+
+    private void trackSeenUrls(List<Article> articles) {
+        articles.forEach(article -> seenUrls.add(article.url()));
+        log.debug("Tracked {} URLs for dedup in session {}", seenUrls.size(), sessionId);
     }
 
     // ========== INNER CLASSES ==========

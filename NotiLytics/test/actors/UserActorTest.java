@@ -18,6 +18,7 @@ import org.mockito.stubbing.OngoingStubbing;
 import services.NewsApiClient;
 import services.ProfileService;
 import services.ReadabilityService;
+import services.SearchHistoryService;
 import services.SearchService;
 
 import java.lang.reflect.Constructor;
@@ -59,6 +60,9 @@ public class UserActorTest {
 
     @Mock
     private ReadabilityService readabilityService;
+
+    @Mock
+    private SearchHistoryService historyService;
 
     private Article articleOne;
     private Article articleTwo;
@@ -134,7 +138,8 @@ public class UserActorTest {
 
         when(profileService.search(anyString()))
                 .thenReturn(CompletableFuture.completedFuture(new ProfileService.SourceProfileResult(profile1, new ArrayList<>())));
-
+        // By default, no persisted history for a session in tests
+        when(historyService.list(anyString())).thenReturn(List.of());
     }
 
     @After
@@ -640,12 +645,60 @@ public class UserActorTest {
         assertFalse(second);
     }
 
+    @Test
+    public void preStartLoadsPersistedHistoryAndReplaysLatestSearch() throws Exception {
+        SearchBlock older = block("old", "relevancy", List.of(articleOne));
+        SearchBlock latest = block("new", "relevancy", List.of(articleTwo));
+        // SearchHistoryService returns newest-first; latest search should be first
+        when(historyService.list(anyString())).thenReturn(List.of(latest, older));
+
+        TestKit socketProbe = new TestKit(system);
+        TestActorRef<UserActor> actorRef = spawnUserActorRef(socketProbe);
+
+        JsonNode initialResults = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("initial_results", initialResults.get("type").asText());
+        assertEquals("new", initialResults.get("data").get("query").asText());
+
+        JsonNode historyMessage = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("history", historyMessage.get("type").asText());
+        JsonNode data = historyMessage.get("data");
+        assertEquals(2, data.get("count").asInt());
+        assertEquals("new", data.get("searches").get(0).get("query").asText());
+        assertEquals("old", data.get("searches").get(1).get("query").asText());
+
+        assertEquals("new", ((SearchBlock) ((java.util.List<?>) getField(
+                actorRef.underlyingActor(), "searchHistory")).get(0)).query());
+    }
+
+    @Test
+    public void addToHistoryMaintainsMaxSizeAndOrder() throws Exception {
+        TestKit socketProbe = new TestKit(system);
+        TestActorRef<UserActor> actorRef = spawnUserActorRef(socketProbe);
+
+        Method addToHistory = UserActor.class.getDeclaredMethod("addToHistory", SearchBlock.class);
+        addToHistory.setAccessible(true);
+
+        for (int i = 0; i < 12; i++) {
+            addToHistory.invoke(actorRef.underlyingActor(),
+                    block("q" + i, "relevancy", List.of(articleOne)));
+        }
+
+        @SuppressWarnings("unchecked")
+        java.util.List<SearchBlock> history =
+                (java.util.List<SearchBlock>) getField(actorRef.underlyingActor(), "searchHistory");
+
+        assertEquals(10, history.size());
+        assertEquals("q11", history.get(0).query());
+        assertEquals("q2", history.get(9).query());
+    }
+
     private ActorRef spawnUserActor(TestKit socketProbe) {
         return system.actorOf(
                 UserActor.props(
                         socketProbe.getRef(),
                         UUID.randomUUID().toString(),
                         searchService,
+                        historyService,
                         newsApiClient,
                         profileService,
                         readabilityService
@@ -660,6 +713,7 @@ public class UserActorTest {
                         socketProbe.getRef(),
                         UUID.randomUUID().toString(),
                         searchService,
+                        historyService,
                         newsApiClient,
                         profileService,
                         readabilityService

@@ -1,4 +1,4 @@
-@()
+@(sessionId: String)
 
 <!DOCTYPE html>
 <html lang="en">
@@ -9,7 +9,7 @@
         <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
         <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/home.css")">
     </head>
-    <body>
+    <body data-session-id="@sessionId">
         <header>
             <div class="container">
                 <h1>📰 NotiLytics</h1>
@@ -80,6 +80,9 @@
                 </div>
             </div>
 
+            <script>
+                window.NOTILYTICS_SESSION_ID = "@sessionId";
+            </script>
             <!-- D2: WebSocket Client JavaScript -->
         <script src="@routes.Assets.versioned("javascripts/websocket-client.js")"></script>
     </body>

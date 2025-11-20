@@ -102,9 +102,10 @@ public class HomeController extends Controller {
         String sessionId = getSessionId(request);
         historyService.list(sessionId);
 
-        return CompletableFuture.completedFuture(
-                ok(views.html.home.render())
-        );
+        Result response = ok(views.html.home.render(sessionId))
+                .addingToSession(request, "sessionId", sessionId);
+
+        return CompletableFuture.completedFuture(response);
     }
 
     /**
@@ -291,8 +292,10 @@ public class HomeController extends Controller {
     public WebSocket socket() {
 
         return WebSocket.Json.accept(requestHeader -> {
-            // Extract sessionId from RequestHeader (not Request)
-            String sessionId = requestHeader.session().get("sessionId")
+            // Try to get sessionId from query parameter (sent by JavaScript) or HTTP session
+            String sessionId = getQueryParam(requestHeader, "sessionId")
+                    .filter(id -> !id.isBlank())
+                    .or(() -> requestHeader.session().get("sessionId"))
                     .orElse(java.util.UUID.randomUUID().toString());
 
             log.info("WebSocket connection request for session: {}", sessionId);
@@ -304,6 +307,7 @@ public class HomeController extends Controller {
                             out,
                             sessionId,
                             searchService,
+                            historyService, // ADDED: History persistence service
                             newsApiClient,
                             profileService,
                             readabilityService
@@ -327,6 +331,14 @@ public class HomeController extends Controller {
     private String getOrCreateSessionId(Http.Request request) {
         return request.session().get("sessionId")
                 .orElse(java.util.UUID.randomUUID().toString());
+    }
+
+    private Optional<String> getQueryParam(Http.RequestHeader requestHeader, String name) {
+        String[] values = requestHeader.queryString().get(name);
+        if (values != null && values.length > 0) {
+            return Optional.ofNullable(values[0]);
+        }
+        return Optional.empty();
     }
 
     /**
