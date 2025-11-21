@@ -216,6 +216,22 @@
   }
 
   /**
+   * Task C: request news sources via WebSocket.
+   * Delegates to NewsSourcesActor on the server.
+   *
+   * @param {Object} filters optional filters {country, category, language}
+   * @author yang
+   */
+  function requestSources(filters = {}) {
+    sendMessage({
+      type: "get_sources",
+      country: filters.country || "",
+      category: filters.category || "",
+      language: filters.language || "",
+    });
+  }
+
+  /**
    * Update connection status indicator
    * @param {string} status Status class (connecting/connected/disconnected/error/searching)
    * @param {string} text Status text
@@ -806,6 +822,9 @@
 
   // Start WebSocket connection on page load
   initWebSocket();
+
+  // Expose a helper for triggering sources fetch before page navigation
+  window.requestSources = requestSources;
 
   console.log("[App] WebSocket client initialized - INLINE ANALYTICS MODE");
 })();

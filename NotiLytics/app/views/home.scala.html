@@ -16,7 +16,7 @@
                 <p class="subtitle">Search and analyze news articles from around the world - Now with Live Updates!</p>
                     <!-- News sources -->
                 <div class="header-actions">
-                    <a href="@routes.HomeController.sources()" class="btn-primary btn-with-icon">
+                    <a id="view-sources-link" href="@routes.HomeController.sources()" class="btn-primary btn-with-icon">
                         <span class="icon">🌐</span>
                         <span>View Sources</span>
                     </a>
@@ -82,6 +82,15 @@
 
             <script>
                 window.NOTILYTICS_SESSION_ID = "@sessionId";
+                document.addEventListener('DOMContentLoaded', function() {
+                    var link = document.getElementById('view-sources-link');
+                    if (link && window.requestSources) {
+                        link.addEventListener('click', function() {
+                            // Task C: fire actor fetch once before navigation to /sources
+                            try { window.requestSources({}); } catch (e) { console.debug(e); }
+                        });
+                    }
+                });
             </script>
             <!-- D2: WebSocket Client JavaScript -->
         <script src="@routes.Assets.versioned("javascripts/websocket-client.js")"></script>

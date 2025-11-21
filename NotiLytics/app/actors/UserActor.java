@@ -65,6 +65,7 @@ public class UserActor extends AbstractActor {
     private final ReadabilityService readabilityService;
     private final SearchHistoryService historyService;
     private final SentimentAnalysisService sentimentService;
+    private final SourcesService sourcesService;
 
     // ========== SESSION STATE (IN-MEMORY) ==========
     private final List<SearchBlock> searchHistory;
@@ -100,7 +101,8 @@ public class UserActor extends AbstractActor {
             NewsApiClient newsApiClient,
             ProfileService profileService,
             ReadabilityService readabilityService,
-            SentimentAnalysisService sentimentService
+            SentimentAnalysisService sentimentService,
+            SourcesService sourcesService
     ) {
         this.out = out;
         this.sessionId = sessionId;
@@ -111,6 +113,7 @@ public class UserActor extends AbstractActor {
         this.profileService = profileService;
         this.readabilityService = readabilityService;
         this.sentimentService = sentimentService;
+        this.sourcesService = sourcesService;
 
         // Initialize state
         this.searchHistory = new ArrayList<>();
@@ -143,7 +146,8 @@ public class UserActor extends AbstractActor {
             NewsApiClient newsApiClient,
             ProfileService profileService,
             ReadabilityService readabilityService,
-            SentimentAnalysisService sentimentService
+            SentimentAnalysisService sentimentService,
+            SourcesService sourcesService
     ) {
         return Props.create(
                 UserActor.class,
@@ -154,7 +158,8 @@ public class UserActor extends AbstractActor {
                 newsApiClient,
                 profileService,
                 readabilityService,
-                sentimentService
+                sentimentService,
+                sourcesService
         );
     }
 
@@ -249,21 +254,20 @@ public class UserActor extends AbstractActor {
         // "word-stats-" + sessionId
         // );
         //
-        // newsSourcesActor = getContext().actorOf(
-        // Props.create(NewsSourcesActor.class),
-        // "news-sources-" + sessionId
-        // );
-        //
-         sentimentAnalysisActor = getContext().actorOf(
-                 SentimentAnalysisActor.props(sentimentService),
-                 "sentiment-" + sessionId
-         );
+        newsSourcesActor = getContext().actorOf(
+                NewsSourcesActor.props(sourcesService),
+                "news-sources-" + sessionId
+        );
+        sentimentAnalysisActor = getContext().actorOf(
+                SentimentAnalysisActor.props(sentimentService),
+                "sentiment-" + sessionId
+        );
         readabilityActor = getContext().actorOf(
                 ReadabilityActor.props(readabilityService),
                 "readability-" + sessionId);
 
         log.info(
-                "UserActor created 5 supervised children for session: {}",
+                "UserActor created supervised children for session: {}",
                 sessionId);
 
         // Load existing history from cache and replay latest search (if any)
@@ -347,6 +351,12 @@ public class UserActor extends AbstractActor {
                 case "stop_search" -> stopCurrentSearch();
                 case "ping" -> sendPong();
                 case "get_history" -> sendHistory();
+                case "get_sources" -> {
+                    String country = message.has("country") ? message.get("country").asText() : "";
+                    String category = message.has("category") ? message.get("category").asText() : "";
+                    String language = message.has("language") ? message.get("language").asText() : "";
+                    requestSources(country, category, language);
+                }
                 default -> {
                     log.warn("Unknown message type: {} for session: {}",
                             type, sessionId);
@@ -554,6 +564,21 @@ public class UserActor extends AbstractActor {
         readabilityActor.tell(
                 new AnalyzeReadability(articles),
                 getSelf());
+    }
+
+    /**
+     * Request news sources from child actor (Task C).
+     *
+     * @param country country filter (optional)
+     * @param category category filter (optional)
+     * @param language language filter (optional)
+     */
+    private void requestSources(String country, String category, String language) {
+        if (newsSourcesActor == null) {
+            log.warn("NewsSourcesActor not initialized for session {}", sessionId);
+            return;
+        }
+        newsSourcesActor.tell(new FetchSources(country, category, language), getSelf());
     }
 
     /**

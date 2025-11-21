@@ -314,7 +314,8 @@ public class HomeController extends Controller {
                             newsApiClient,
                             profileService,
                             readabilityService,
-                            sentimentAnalysisService
+                            sentimentAnalysisService,
+                            sourcesService
                     ),
                     actorSystem,
                     materializer
