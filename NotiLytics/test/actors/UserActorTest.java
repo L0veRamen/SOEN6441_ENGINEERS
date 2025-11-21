@@ -65,6 +65,9 @@ public class UserActorTest {
     @Mock
     private SentimentAnalysisService sentimentService;
 
+    @Mock
+    private SourcesService sourcesService;
+
     private Article articleOne;
     private Article articleTwo;
     private Article articleThree;
@@ -142,11 +145,13 @@ public class UserActorTest {
         // By default, no persisted history for a session in tests
         when(historyService.list(anyString())).thenReturn(List.of());
         when(sentimentService.analyzeWordList(anyList())).thenReturn(Sentiment.NEUTRAL);
+        when(sourcesService.listSources(any(), any(), any()))
+                .thenReturn(CompletableFuture.completedFuture(List.of()));
     }
 
     @After
     public void resetMocks() {
-        reset(searchService, newsApiClient, readabilityService);
+        reset(searchService, newsApiClient, readabilityService, sourcesService);
     }
 
     @Test
@@ -211,6 +216,152 @@ public class UserActorTest {
         socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
 
         verify(searchService).search("default", "publishedAt");
+    }
+
+    @Test
+    public void getSourcesRoutesToChildAndReturnsPayload() {
+        SourceItem s = new SourceItem("id", "Name", "d", "u", "c", "en", "us");
+        when(sourcesService.listSources(any(), any(), any()))
+                .thenReturn(CompletableFuture.completedFuture(List.of(s)));
+
+        TestKit socketProbe = new TestKit(system);
+        ActorRef userActor = spawnUserActor(socketProbe);
+
+        ObjectNode msg = mapper.createObjectNode();
+        msg.put("type", "get_sources");
+        msg.put("country", "US");
+        msg.put("category", "Tech");
+        msg.put("language", "EN");
+        userActor.tell(msg, ActorRef.noSender());
+
+        JsonNode sourcesMsg = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("sources", sourcesMsg.get("type").asText());
+        JsonNode data = sourcesMsg.get("data");
+        assertEquals(1, data.get("count").asInt());
+        assertEquals("US", data.get("country").asText());
+        assertEquals("Tech", data.get("category").asText());
+    }
+
+    @Test
+    public void handleWebSocketUnknownTypeDoesNothing() {
+        TestKit socketProbe = new TestKit(system);
+        ActorRef userActor = spawnUserActor(socketProbe);
+
+        ObjectNode unknown = mapper.createObjectNode();
+        unknown.put("type", "does_not_exist");
+        userActor.tell(unknown, ActorRef.noSender());
+
+        socketProbe.expectNoMessage(Duration.ofSeconds(1));
+    }
+
+    @Test
+    public void handleWebSocketInvalidFormatSendsError() {
+        TestKit socketProbe = new TestKit(system);
+        ActorRef userActor = spawnUserActor(socketProbe);
+
+        ObjectNode invalid = mapper.createObjectNode(); // missing type triggers exception
+        userActor.tell(invalid, ActorRef.noSender());
+
+        JsonNode msg = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("error", msg.get("type").asText());
+        assertTrue(msg.get("data").get("message").asText().contains("Invalid message"));
+    }
+
+    @Test
+    public void requestSourcesNoActorIsSafeguarded() throws Exception {
+        TestKit socketProbe = new TestKit(system);
+        TestActorRef<UserActor> actorRef = spawnUserActorRef(socketProbe);
+        UserActor actor = actorRef.underlyingActor();
+
+        Field f = UserActor.class.getDeclaredField("newsSourcesActor");
+        f.setAccessible(true);
+        f.set(actor, null); // force missing child actor
+
+        Method m = UserActor.class.getDeclaredMethod("requestSources", String.class, String.class, String.class);
+        m.setAccessible(true);
+        m.invoke(actor, "", "", "");
+
+        socketProbe.expectNoMessage(Duration.ofSeconds(1));
+    }
+
+    @Test
+    public void handleNewsApiErrorTimeoutSendsStatus() throws Exception {
+        TestKit socketProbe = new TestKit(system);
+        TestActorRef<UserActor> actorRef = spawnUserActorRef(socketProbe);
+        UserActor actor = actorRef.underlyingActor();
+
+        Method m = UserActor.class.getDeclaredMethod("handleNewsApiError", Throwable.class);
+        m.setAccessible(true);
+        m.invoke(actor, new HttpTimeoutException("slow"));
+
+        JsonNode msg = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("status", msg.get("type").asText());
+        assertTrue(msg.get("data").get("message").asText().contains("Search delayed"));
+    }
+
+    @Test
+    public void handleNewsApiErrorConnectSendsError() throws Exception {
+        TestKit socketProbe = new TestKit(system);
+        TestActorRef<UserActor> actorRef = spawnUserActorRef(socketProbe);
+        UserActor actor = actorRef.underlyingActor();
+
+        Method m = UserActor.class.getDeclaredMethod("handleNewsApiError", Throwable.class);
+        m.setAccessible(true);
+        m.invoke(actor, new ConnectException("down"));
+
+        JsonNode msg = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("error", msg.get("type").asText());
+        assertTrue(msg.get("data").get("message").asText().contains("temporarily unavailable"));
+    }
+
+    @Test
+    public void handleNewsApiErrorRateLimitReschedules() throws Exception {
+        TestKit socketProbe = new TestKit(system);
+        TestActorRef<UserActor> actorRef = spawnUserActorRef(socketProbe);
+        UserActor actor = actorRef.underlyingActor();
+
+        Method m = UserActor.class.getDeclaredMethod("handleNewsApiError", Throwable.class);
+        m.setAccessible(true);
+        m.invoke(actor, new RuntimeException("429 too many"));
+
+        JsonNode msg = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("error", msg.get("type").asText());
+        assertTrue(msg.get("data").get("message").asText().contains("Too many requests"));
+    }
+
+    @Test
+    public void handleNewsApiErrorGenericSendsError() throws Exception {
+        TestKit socketProbe = new TestKit(system);
+        TestActorRef<UserActor> actorRef = spawnUserActorRef(socketProbe);
+        UserActor actor = actorRef.underlyingActor();
+
+        Method m = UserActor.class.getDeclaredMethod("handleNewsApiError", Throwable.class);
+        m.setAccessible(true);
+        m.invoke(actor, new RuntimeException("boom"));
+
+        JsonNode msg = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("error", msg.get("type").asText());
+        assertTrue(msg.get("data").get("message").asText().contains("Search failed"));
+    }
+
+    @Test
+    public void getSourcesWithMissingFiltersDefaultsToEmptyStrings() {
+        when(sourcesService.listSources(any(), any(), any()))
+                .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+        TestKit socketProbe = new TestKit(system);
+        ActorRef userActor = spawnUserActor(socketProbe);
+
+        ObjectNode msg = mapper.createObjectNode();
+        msg.put("type", "get_sources"); // no filters provided
+        userActor.tell(msg, ActorRef.noSender());
+
+        JsonNode sourcesMsg = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("sources", sourcesMsg.get("type").asText());
+        JsonNode data = sourcesMsg.get("data");
+        assertEquals("", data.get("country").asText());
+        assertEquals("", data.get("category").asText());
+        assertEquals("", data.get("language").asText());
     }
 
     @Test
@@ -722,7 +873,8 @@ public class UserActorTest {
                         newsApiClient,
                         profileService,
                         readabilityService,
-                        sentimentService
+                        sentimentService,
+                        sourcesService
                 )
         );
     }
@@ -738,7 +890,8 @@ public class UserActorTest {
                         newsApiClient,
                         profileService,
                         readabilityService,
-                        sentimentService
+                        sentimentService,
+                        sourcesService
                 )
         );
     }
