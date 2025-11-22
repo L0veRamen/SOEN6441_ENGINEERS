@@ -43,6 +43,7 @@
   <logger name="application" level="DEBUG"/>
   <logger name="controllers" level="DEBUG" />
   <logger name="services" level="DEBUG" />
+  <logger name="actors" level="DEBUG" />
 
   <root level="WARN">
     <appender-ref ref="ASYNCFILE"/>
