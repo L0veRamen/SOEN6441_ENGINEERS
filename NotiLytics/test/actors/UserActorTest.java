@@ -880,14 +880,35 @@ public class UserActorTest {
     }
     
     @Test
-    public void handleWebSocketMessageRejectsBlankOrEmptyQuery() {
+    public void handleWebSocketMessageRejectsBlankQuery() {
         TestKit socketProbe = new TestKit(system);
         ActorRef userActor = spawnUserActor(socketProbe);
         
-        // Send start_search with blank query
         ObjectNode startMessage = mapper.createObjectNode();
         startMessage.put("type", "start_search");
-        startMessage.put("query", "   ");  // Blank
+        startMessage.put("query", "   ");
+        startMessage.put("sortBy", "publishedAt");
+        
+        userActor.tell(startMessage, ActorRef.noSender());
+        
+        // Expect error message
+        JsonNode errorMsg = socketProbe.expectMsgClass(Duration.ofSeconds(3), JsonNode.class);
+        assertEquals("error", errorMsg.get("type").asText());
+        assertTrue(errorMsg.get("data").get("message").asText()
+            .contains("cannot be empty"));
+        
+        // Verify search was NOT performed
+        verify(searchService, never()).search(anyString(), anyString());
+    }
+
+    @Test
+    public void handleWebSocketMessageRejectsEmptyQuery() {
+        TestKit socketProbe = new TestKit(system);
+        ActorRef userActor = spawnUserActor(socketProbe);
+        
+        ObjectNode startMessage = mapper.createObjectNode();
+        startMessage.put("type", "start_search");
+        startMessage.put("query", "");
         startMessage.put("sortBy", "publishedAt");
         
         userActor.tell(startMessage, ActorRef.noSender());
