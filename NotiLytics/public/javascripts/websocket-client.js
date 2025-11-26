@@ -14,6 +14,7 @@
   let currentSentiment = null;
   let currentArticleReadability = [];
   let currentQueryText = "";
+  let hasReceivedInitialResults = false; // Flag to prevent infinite search loops
 
   const elements = {
     wsQuery: document.getElementById("ws-query"),
@@ -31,7 +32,7 @@
     sourcesPanel: document.getElementById("sources-panel"),
   };
 
-   /**
+  /**
    * Get or create session ID from localStorage
    * This ensures the same sessionId persists across tabs and navigation
    *
@@ -71,11 +72,14 @@
    * @author Group Members
    */
   function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+      /[xy]/g,
+      function (c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      }
+    );
   }
 
   /**
@@ -107,6 +111,9 @@
   function handleOpen() {
     console.log("[WebSocket] Connected with session:", sessionId);
     updateStatus("connected", "Connected");
+
+    // Reset the flag so auto-replay can work for first search after connection
+    hasReceivedInitialResults = false;
 
     // Enable controls
     elements.wsQuery.disabled = false;
@@ -196,9 +203,12 @@
 
     // Attempt reconnection after 3 seconds (will reuse same sessionId)
     setTimeout(() => {
-      console.log("[WebSocket] Attempting reconnection with session:", sessionId);
+      console.log(
+        "[WebSocket] Attempting reconnection with session:",
+        sessionId
+      );
       initWebSocket();
-  }, 3000);
+    }, 3000);
   }
 
   /**
@@ -310,6 +320,10 @@
    */
   function handleInitialResults(data) {
     console.log("[Results] Initial results received:", data.count);
+
+    // Mark that we have received results for this search session
+    // This prevents auto-replay from triggering infinite loops
+    hasReceivedInitialResults = true;
 
     if (data.query) {
       currentQueryText = data.query;
@@ -475,7 +489,9 @@
             <div class="article-meta">
                 ${
                   article.sourceName
-                    ? `Source: <a href="/source/${escapeHtml(article.sourceId)}">${escapeHtml(article.sourceName)}</a>`
+                    ? `Source: <a href="/source/${escapeHtml(
+                        article.sourceId
+                      )}">${escapeHtml(article.sourceName)}</a>`
                     : ""
                 }
                 ${
@@ -591,7 +607,13 @@
 
     // If we have history but no live results yet (e.g. after navigation),
     // automatically replay the most recent search.
-    if (liveArticles.length === 0 && searches.length > 0) {
+    // CRITICAL: Only auto-replay if we haven't received initial results yet
+    // This prevents infinite loop when API returns 0 results (e.g., rate limited)
+    if (
+      liveArticles.length === 0 &&
+      searches.length > 0 &&
+      !hasReceivedInitialResults
+    ) {
       const latest = searches[0];
       replaySearch(latest.query, latest.sortBy || "publishedAt");
     }
