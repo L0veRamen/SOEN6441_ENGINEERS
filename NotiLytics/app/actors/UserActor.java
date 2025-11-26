@@ -66,6 +66,7 @@ public class UserActor extends AbstractActor {
     private final SearchHistoryService historyService;
     private final SentimentAnalysisService sentimentService;
     private final SourcesService sourcesService;
+    private final WordStatsService wordStatsService;
 
     // ========== SESSION STATE (IN-MEMORY) ==========
     private final List<SearchBlock> searchHistory;
@@ -90,7 +91,8 @@ public class UserActor extends AbstractActor {
      * @param historyService     Search history persistence service
      * @param newsApiClient      NewsAPI client
      * @param readabilityService Readability analysis service
-     * @param sentimentService Sentiment analysis service
+     * @param sentimentService 	 Sentiment analysis service
+     * @param wordStatsService	 WordStats service
      * @author Group Members
      */
     public UserActor(
@@ -102,7 +104,8 @@ public class UserActor extends AbstractActor {
             ProfileService profileService,
             ReadabilityService readabilityService,
             SentimentAnalysisService sentimentService,
-            SourcesService sourcesService
+            SourcesService sourcesService,
+            WordStatsService wordStatsService
     ) {
         this.out = out;
         this.sessionId = sessionId;
@@ -114,6 +117,7 @@ public class UserActor extends AbstractActor {
         this.readabilityService = readabilityService;
         this.sentimentService = sentimentService;
         this.sourcesService = sourcesService;
+        this.wordStatsService = wordStatsService;
 
         // Initialize state
         this.searchHistory = new ArrayList<>();
@@ -147,7 +151,8 @@ public class UserActor extends AbstractActor {
             ProfileService profileService,
             ReadabilityService readabilityService,
             SentimentAnalysisService sentimentService,
-            SourcesService sourcesService
+            SourcesService sourcesService,
+            WordStatsService wordStatsService
     ) {
         return Props.create(
                 UserActor.class,
@@ -159,7 +164,8 @@ public class UserActor extends AbstractActor {
                 profileService,
                 readabilityService,
                 sentimentService,
-                sourcesService
+                sourcesService,
+                wordStatsService
         );
     }
 
@@ -248,12 +254,10 @@ public class UserActor extends AbstractActor {
             SourceProfileActor.props(profileService),
             "source-profile-" + sessionId
         );
-        //
-        // wordStatsActor = getContext().actorOf(
-        // Props.create(WordStatsActor.class),
-        // "word-stats-" + sessionId
-        // );
-        //
+        wordStatsActor = getContext().actorOf(
+        		WordStatsActor.props(wordStatsService),
+        		"word-stats-" + sessionId
+        );
         newsSourcesActor = getContext().actorOf(
                 NewsSourcesActor.props(sourcesService),
                 "news-sources-" + sessionId
@@ -343,6 +347,10 @@ public class UserActor extends AbstractActor {
             switch (type) {
                 case "start_search" -> {
                     String query = message.get("query").asText();
+                    if (query.isBlank()) {
+                        sendError("Search query cannot be empty or blank");
+                        return;
+                    }
                     String sortBy = message.has("sortBy")
                             ? message.get("sortBy").asText()
                             : "publishedAt";
@@ -546,6 +554,12 @@ public class UserActor extends AbstractActor {
 
         log.debug("Triggering task analysis for {} articles in session {} (includeSourceProfile={})",
                 articles.size(), sessionId, includeSourceProfile);
+        
+        // Task B: Word Statistics
+        wordStatsActor.tell(
+                new AnalyzeWords(currentQuery),
+                getSelf()
+        );
 
         if (includeSourceProfile) {
             String sourceName = articles.getFirst().getSourceId();

@@ -310,12 +310,13 @@ public class HomeController extends Controller {
                             out,
                             sessionId,
                             searchService,
-                            historyService, // ADDED: History persistence service
+                            historyService,
                             newsApiClient,
                             profileService,
                             readabilityService,
                             sentimentAnalysisService,
-                            sourcesService
+                            sourcesService,
+                            wordStatsService
                     ),
                     actorSystem,
                     materializer

@@ -67,6 +67,9 @@ public class UserActorTest {
 
     @Mock
     private SourcesService sourcesService;
+    
+    @Mock
+    private WordStatsService wordStatsService;
 
     private Article articleOne;
     private Article articleTwo;
@@ -147,6 +150,10 @@ public class UserActorTest {
         when(sentimentService.analyzeWordList(anyList())).thenReturn(Sentiment.NEUTRAL);
         when(sourcesService.listSources(any(), any(), any()))
                 .thenReturn(CompletableFuture.completedFuture(List.of()));
+        when(wordStatsService.computeWordStats(anyString()))
+		        .thenReturn(CompletableFuture.completedFuture(
+        new WordStats("test", 10, 100, 50, List.of())
+        ));
     }
 
     @After
@@ -837,6 +844,102 @@ public class UserActorTest {
         assertEquals("q11", history.get(0).query());
         assertEquals("q2", history.get(9).query());
     }
+    
+    @Test
+    public void startSearchTriggersWordStatsAnalysis() {
+        stubSearch("test", "relevancy",
+            completed(initialBlock),
+            completed(updateBlock));
+        
+        when(wordStatsService.computeWordStats("test"))
+            .thenReturn(CompletableFuture.completedFuture(
+                new WordStats("test", 10, 500, 200,
+                    List.of(new WordStats.WordFrequency("testing", 50)))
+            ));
+        
+        TestKit socketProbe = new TestKit(system);
+        ActorRef userActor = spawnUserActor(socketProbe);
+        
+        sendStartSearch(userActor, "test", "relevancy");
+        
+        JsonNode initialResults = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("initial_results", initialResults.get("type").asText());
+        
+        JsonNode historyMsg = socketProbe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
+        assertEquals("history", historyMsg.get("type").asText());
+        
+        Map<String, JsonNode> taskMessages = expectTaskMessages(socketProbe, true);
+        
+        JsonNode wordStatsMsg = taskMessages.get("wordStats");
+        assertNotNull("WordStats message should be received", wordStatsMsg);
+        assertEquals("test", wordStatsMsg.get("data").get("query").asText());
+        assertEquals(10, wordStatsMsg.get("data").get("totalArticles").asInt());
+        assertEquals(500, wordStatsMsg.get("data").get("totalWords").asInt());
+        
+        verify(wordStatsService, times(1)).computeWordStats("test");
+    }
+    
+    @Test
+    public void handleWebSocketMessageRejectsBlankQuery() {
+        TestKit socketProbe = new TestKit(system);
+        ActorRef userActor = spawnUserActor(socketProbe);
+        
+        ObjectNode startMessage = mapper.createObjectNode();
+        startMessage.put("type", "start_search");
+        startMessage.put("query", "   ");
+        startMessage.put("sortBy", "publishedAt");
+        
+        userActor.tell(startMessage, ActorRef.noSender());
+        
+        // Expect error message
+        JsonNode errorMsg = socketProbe.expectMsgClass(Duration.ofSeconds(3), JsonNode.class);
+        assertEquals("error", errorMsg.get("type").asText());
+        assertTrue(errorMsg.get("data").get("message").asText()
+            .contains("cannot be empty"));
+        
+        // Verify search was NOT performed
+        verify(searchService, never()).search(anyString(), anyString());
+    }
+
+    @Test
+    public void handleWebSocketMessageRejectsEmptyQuery() {
+        TestKit socketProbe = new TestKit(system);
+        ActorRef userActor = spawnUserActor(socketProbe);
+        
+        ObjectNode startMessage = mapper.createObjectNode();
+        startMessage.put("type", "start_search");
+        startMessage.put("query", "");
+        startMessage.put("sortBy", "publishedAt");
+        
+        userActor.tell(startMessage, ActorRef.noSender());
+        
+        // Expect error message
+        JsonNode errorMsg = socketProbe.expectMsgClass(Duration.ofSeconds(3), JsonNode.class);
+        assertEquals("error", errorMsg.get("type").asText());
+        assertTrue(errorMsg.get("data").get("message").asText()
+            .contains("cannot be empty"));
+        
+        // Verify search was NOT performed
+        verify(searchService, never()).search(anyString(), anyString());
+    }
+
+    @Test
+    public void handleWebSocketMessageAcceptsValidQuery() {
+        stubSearch("valid", "publishedAt", completed(initialBlock));
+        
+        TestKit socketProbe = new TestKit(system);
+        ActorRef userActor = spawnUserActor(socketProbe);
+        
+        // Send start_search with valid query
+        sendStartSearch(userActor, "valid", "publishedAt");
+        
+        // Should proceed with search (expect initial_results, not error)
+        JsonNode firstMsg = socketProbe.expectMsgClass(Duration.ofSeconds(3), JsonNode.class);
+        assertEquals("initial_results", firstMsg.get("type").asText());
+        
+        // Verify search WAS performed
+        verify(searchService, times(1)).search("valid", "publishedAt");
+    }
 
     private JsonNode expectMessageOfType(TestKit probe, String expectedType) {
         JsonNode message = probe.expectMsgClass(Duration.ofSeconds(5), JsonNode.class);
@@ -846,9 +949,9 @@ public class UserActorTest {
 
     private Map<String, JsonNode> expectTaskMessages(TestKit probe, boolean includeSourceProfile) {
         if (includeSourceProfile) {
-            return drainMessagesByType(probe, "sourceProfile", "sentiment", "readability");
+            return drainMessagesByType(probe, "sourceProfile", "wordStats", "sentiment", "readability");
         }
-        return drainMessagesByType(probe, "sentiment", "readability");
+        return drainMessagesByType(probe, "wordStats", "sentiment", "readability");
     }
 
     private Map<String, JsonNode> drainMessagesByType(TestKit probe, String... expectedTypes) {
@@ -874,7 +977,8 @@ public class UserActorTest {
                         profileService,
                         readabilityService,
                         sentimentService,
-                        sourcesService
+                        sourcesService,
+                        wordStatsService
                 )
         );
     }
@@ -891,7 +995,8 @@ public class UserActorTest {
                         profileService,
                         readabilityService,
                         sentimentService,
-                        sourcesService
+                        sourcesService,
+                        wordStatsService
                 )
         );
     }
