@@ -576,6 +576,13 @@
                     <span style="margin-left: 1rem;">⏱️ ${
                       search.createdAtIso || ""
                     }</span>
+					<span style="margin-left: 1rem;"> 
+					<a href="/wordstats?q=${encodeURIComponent(search.query)}" 
+					                 target="_blank" 
+					                 class="wordstats-link"
+									 onclick="event.stopPropagation()"
+					                 title="View word statistics">Word Statistics</a>
+					</span>
                 </div>
             </div>
         `
