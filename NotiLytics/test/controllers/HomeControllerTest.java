@@ -1,7 +1,12 @@
 package controllers;
 
 import models.*;
+import org.apache.pekko.actor.ActorSystem;
+import org.apache.pekko.stream.Materializer;
+import org.apache.pekko.stream.SystemMaterializer;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -9,12 +14,14 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import play.mvc.Http;
 import play.mvc.Result;
+import play.mvc.WebSocket;
 import services.*;
 import services.ProfileService.SourceProfileResult;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -39,6 +46,9 @@ import static play.test.Helpers.contentAsString;
 @RunWith(MockitoJUnitRunner.class)
 public class HomeControllerTest {
 
+    private static ActorSystem actorSystem;
+    private static Materializer materializer;
+
     @Mock
     private SearchHistoryService historyService;
 
@@ -54,9 +64,31 @@ public class HomeControllerTest {
     @Mock
     private SourcesService sourcesService;
 
+    @Mock
+    private NewsApiClient newsApiClient;
+
+    @Mock
+    private ReadabilityService readabilityService;
+    @Mock
+    private SentimentAnalysisService sentimentService;
+
     private HomeController controller;
     private SearchBlock sampleBlock;
     private WordStats sampleWordStats;
+
+    @BeforeClass
+    public static void initActorInfra() {
+        actorSystem = ActorSystem.create("home-controller-test");
+        materializer = SystemMaterializer.get(actorSystem).materializer();
+    }
+
+    @AfterClass
+    public static void shutdownActorInfra() throws Exception {
+        if (actorSystem != null) {
+            actorSystem.terminate();
+            actorSystem.getWhenTerminated().toCompletableFuture().get(5, TimeUnit.SECONDS);
+        }
+    }
 
     /**
      * Set up test fixtures before each test
@@ -66,7 +98,18 @@ public class HomeControllerTest {
      */
     @Before
     public void setUp() {
-        controller = new HomeController(searchService, historyService, profileService, wordStatsService, sourcesService);
+        controller = new HomeController(
+                actorSystem,
+                materializer,
+                searchService,
+                historyService,
+                profileService,
+                wordStatsService,
+                sourcesService,
+                newsApiClient,
+                readabilityService,
+                sentimentService
+        );
         sampleBlock = new SearchBlock(
                 "java",
                 "publishedAt",
@@ -196,7 +239,7 @@ public class HomeControllerTest {
      * @author Zi Lun Li
      */
 	 @Test
-	 public void wordStatsHandlesErrorTest() throws Exception {
+    public void wordStatsHandlesErrorTest() throws Exception {
         CompletableFuture<WordStats> error = new CompletableFuture<>();
         error.completeExceptionally(new RuntimeException("Error"));
         when(wordStatsService.computeWordStats(anyString())).thenReturn(error);
@@ -784,10 +827,10 @@ public class HomeControllerTest {
     }
 
 // ==================== NEWS SOURCES TESTS ====================
-    
-    /** 
+
+    /**
      * @description:  Tests that when no filters are provided, the controller calls listSources() with empty Optionals and renders successfully.
-     * @param: 
+     * @param:
      * @return: void
      * @author yang
      * @date: 2025-10-30 12:50
@@ -813,10 +856,10 @@ public class HomeControllerTest {
         verify(sourcesService).getFacets();
         verify(sourcesService).listSources(eq(Optional.empty()), eq(Optional.empty()), eq(Optional.empty()));
     }
-    
-    /** 
+
+    /**
      * @description: Tests that uppercase filters (country, category, language) are converted to lowercase before calling the service.
-     * @param: 
+     * @param:
      * @return: void
      * @author yang
      * @date: 2025-10-30 12:50
@@ -842,9 +885,9 @@ public class HomeControllerTest {
         verify(sourcesService).listSources(eq(Optional.of("us")), eq(Optional.of("business")), eq(Optional.of("en")));
     }
 
-    /** 
+    /**
      * @description: Tests that the controller renders correctly even when listSources() returns an empty result list.
-     * @param: 
+     * @param:
      * @return: void
      * @author yang
      * @date: 2025-10-30 12:50
@@ -867,5 +910,63 @@ public class HomeControllerTest {
         assertEquals(OK, result.status());
         verify(sourcesService).getFacets();
         verify(sourcesService).listSources(eq(Optional.of("us")), eq(Optional.empty()), eq(Optional.empty()));
+    }
+
+    @Test
+    public void socketEndpointCreatesWebSocket() {
+        WebSocket socket = controller.socket();
+        assertNotNull(socket);
+    }
+
+    @Test
+    public void getQueryParamReturnsFirstValueWhenPresent() throws Exception {
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/ws?sessionId=abc&sessionId=def")
+                .build();
+
+        java.lang.reflect.Method method = HomeController.class.getDeclaredMethod(
+                "getQueryParam", Http.RequestHeader.class, String.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        Optional<String> value = (Optional<String>) method.invoke(controller, request, "sessionId");
+
+        assertTrue(value.isPresent());
+        assertEquals("abc", value.get());
+    }
+
+    @Test
+    public void getQueryParamReturnsEmptyWhenMissing() throws Exception {
+        Http.Request request = new Http.RequestBuilder()
+                .method("GET")
+                .uri("/ws")
+                .build();
+
+        java.lang.reflect.Method method = HomeController.class.getDeclaredMethod(
+                "getQueryParam", Http.RequestHeader.class, String.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        Optional<String> value = (Optional<String>) method.invoke(controller, request, "sessionId");
+
+        assertFalse(value.isPresent());
+    }
+
+    @Test
+    public void getQueryParamHandlesEmptyArray() throws Exception {
+        Http.RequestHeader header = mock(Http.RequestHeader.class);
+        when(header.queryString()).thenReturn(java.util.Map.of(
+                "sessionId", new String[]{}));
+
+        java.lang.reflect.Method method = HomeController.class.getDeclaredMethod(
+                "getQueryParam", Http.RequestHeader.class, String.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        Optional<String> value =
+                (Optional<String>) method.invoke(controller, header, "sessionId");
+
+        assertFalse(value.isPresent());
     }
 }

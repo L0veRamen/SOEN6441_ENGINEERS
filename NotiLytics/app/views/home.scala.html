@@ -1,4 +1,4 @@
-@(searchHistory: java.util.List[models.SearchBlock], request: play.mvc.Http.Request)
+@(sessionId: String)
 
 <!DOCTYPE html>
 <html lang="en">
@@ -7,157 +7,92 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>NotiLytics - News Search & Analysis</title>
         <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
+        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/home.css")">
     </head>
-    <body>
+    <body data-session-id="@sessionId">
         <header>
             <div class="container">
                 <h1>📰 NotiLytics</h1>
-                <p class="subtitle">Search and analyze news articles from around the world</p>
+                <p class="subtitle">Search and analyze news articles from around the world - Now with Live Updates!</p>
                     <!-- News sources -->
                 <div class="header-actions">
-                    <a href="@routes.HomeController.sources()" class="btn-primary btn-with-icon">
+                    <a id="view-sources-link" href="@routes.HomeController.sources()" class="btn-primary btn-with-icon">
                         <span class="icon">🌐</span>
                         <span>View Sources</span>
                     </a>
                 </div>
-
             </div>
         </header>
 
         <div class="container">
-                <!-- Search Form -->
-            <div class="search-form">
-                <form action="/notilytics" method="GET">
-                    <div class="form-group">
-                        <label for="query">Search Query</label>
-                        <input type="text"
-                        id="query"
-                        name="q"
-                        placeholder="Enter keywords to search for news..."
-                        required
-                        minlength="1"
-                        autofocus>
-                    </div>
+                <!-- D2: WebSocket Live Search Section -->
+            <div class="websocket-section">
+                <h2>
+                    <span>💡</span>
+                    Live News Search
+                    <span class="status-indicator" id="ws-status"></span>
+                    <span id="ws-status-text">Initializing...</span>
+                </h2>
+                <p class="ws-intro">
+                    Start a live search and receive real-time updates every 30 seconds as new articles are published.
+                </p>
 
-                    <div class="form-group">
-                        <label for="sortBy">Sort By</label>
-                        <select id="sortBy" name="sortBy">
-                            <option value="publishedAt" selected>Published Date (Newest First)</option>
-                            <option value="relevancy">Relevancy</option>
-                            <option value="popularity">Popularity</option>
-                        </select>
-                    </div>
+                <div class="ws-controls">
+                    <input
+                    type="text"
+                    id="ws-query"
+                    placeholder="Enter keywords for live search..."
+                    disabled
+                    autofocus>
 
-                    <button type="submit">🔍 Search News</button>
-                </form>
+                    <select id="ws-sortBy" disabled>
+                        <option value="publishedAt" selected>Published Date (Newest First)</option>
+                        <option value="relevancy">Relevancy</option>
+                        <option value="popularity">Popularity</option>
+                    </select>
+
+                    <button id="start-search-btn" disabled>Start Live Search</button>
+
+                    <button id="stop-search-btn" disabled>Stop Search</button>
+                </div>
             </div>
 
-                <!-- Search History -->
-            @if(searchHistory != null && !searchHistory.isEmpty()) {
-                <div class="search-history">
-                    <h2>Search History
-                        <span class="badge badge-info">@searchHistory.size() @if(searchHistory.size() == 1) {search} else {searches}</span>
-                    </h2>
-
-                    @for(block <- searchHistory) {
-                        <div class="search-block">
-                            <div class="search-block-header">
-                                <h3>@block.query()
-                                    <a href="/wordstats?q=@block.query()" class="badge badge-info" style="text-decoration: none; margin-left: 10px;">
-                                        Word Stats
-                                    </a>
-                                </h3>
-                                <div class="search-meta">
-                                    <span>📊 <strong>@block.totalResults()</strong> total results</span>
-                                    <span>🔄 Sorted by: <strong>@block.sortBy()</strong></span>
-                                    <span>🕒 @block.createdAtIso()</span>
-                                    @* ============================================ *@
-                                    @* TASK E: Display Average Readability Scores  *@
-                                    @* ============================================ *@
-                                    @if(block.readability() != null && block.readability().isValid()) {
-                                        <span class="readability-badge">
-                                            📖 <strong>Readability:</strong>
-                                            Grade Level: <strong>@{
-                                            String.format("%.1f", block.readability().gradeLevel())
-                                        }</strong> |
-                                            Reading Ease: <strong>@{
-                                            String.format("%.1f", block.readability().readingEase())
-                                        }</strong>
-                                            <span class="readability-interpretation">
-                                                (@block.readability().getReadingEaseInterpretation())</span>
-                                        </span>
-                                    }
-                                    @if(block.articleSentiment() != null) {
-                                        <span>
-                                            | 💬 Overall Sentiment: <strong>@block.articleSentiment().getDescription()</strong>
-                                        </span>
-                                    }
-                                </div>
-                            </div>
-
-                            @if(block.articles() != null && !block.articles().isEmpty()) {
-                                @for((article, idx) <- block.articles().zipWithIndex) {
-                                    <div class="article">
-                                        <div class="article-title">
-                                        @if(article.hasUrl()) {
-                                            <a href="@article.url()" target="_blank" rel="noopener noreferrer">
-                                            @article.title()
-                                            </a>
-                                        } else {
-                                            @article.title()
-                                        }
-                                        </div>
-
-                                        <div class="article-meta">
-                                            @if(article.hasSource()) {
-                                                Source: <a href="@routes.HomeController.source(article.getSourceId)">@article.getSourceDisplayName()</a>
-                                            }
-                                            @if(article.publishedAt() != null && !article.publishedAt().isEmpty()) {
-                                                | Published: @article.publishedAt()
-                                            }
-                                            @* OPTIONAL: Individual article readability *@
-                                            @if(block.articleReadability() != null && idx < block.articleReadability().size()) {
-                                                @defining(block.articleReadability().get(idx)) { scores =>
-                                                    @if(scores.isValid()) {
-                                                        <span class="article-readability-inline">
-                                                            | 📚 Grade: <strong>@{String.format("%.1f", scores.gradeLevel())}</strong>
-                                                            Ease: <strong>@{String.format("%.1f", scores.readingEase())}</strong>
-                                                        </span>
-                                                    }
-                                                }
-                                            }
-                                        </div>
-
-                                        @if(article.description() != null && !article.description().isEmpty()) {
-                                            <div class="article-description">
-                                            @article.description()
-                                            </div>
-                                        }
-                                    </div>
-                                }
-                            } else {
-                                <div class="no-results">
-                                    No articles found for this search.
-                                </div>
-                            }
-                        </div>
-                    }
+                <!-- Search History Section -->
+            <section class="history-section">
+                <div class="history-header-bar">
+                    <h2>🕒 Search History</h2>
                 </div>
-            } else {
-                <div class="no-results">
-                    <p>👋 Welcome! Enter a search query above to get started.</p>
+                <div id="history-container" class="history-container">
+                    <p class="loading">Connecting to server...</p>
                 </div>
-            }
-        </div>
+            </section>
 
-        <script>
-                // Auto-focus search input on page load
+                <!-- D2: Live Results Display -->
+            <div id="live-results" class="live-results-container">
+                    <!-- Search info with INLINE analytics -->
+                <div id="search-info" class="search-info">
+                        <!-- Search metadata will be inserted here by JavaScript -->
+                </div>
+
+                    <!-- Articles Container -->
+                <div id="articles-container" class="articles-container">
+                        <!-- Articles will be appended here -->
+                </div>
+            </div>
+
+            <script>
+                window.NOTILYTICS_SESSION_ID = "@sessionId";
                 document.addEventListener('DOMContentLoaded', function() {
-                    var queryInput = document.getElementById('query');
-                    if (queryInput) {
-                        queryInput.focus();
+                    var link = document.getElementById('view-sources-link');
+                    if (link && window.requestSources) {
+                        link.addEventListener('click', function() {
+                            // Task C: fire actor fetch once before navigation to /sources
+                            try { window.requestSources({}); } catch (e) { console.debug(e); }
+                        });
                     }
                 });
-        </script>
+            </script>
+            <!-- D2: WebSocket Client JavaScript -->
+        <script src="@routes.Assets.versioned("javascripts/websocket-client.js")"></script>
     </body>
 </html>

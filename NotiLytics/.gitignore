@@ -16,6 +16,8 @@ project/metals.sbt
 project/project/*
 .metals/*
 .metadata
+/test/actors/.bsp 
+/test/actors/.idea
 
 # Compiled class file
 *.class

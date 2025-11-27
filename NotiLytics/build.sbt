@@ -16,15 +16,23 @@ javacOptions ++= Seq(
 libraryDependencies += guice
 libraryDependencies += ws
 
+// ==================== PEKKO ACTORS (D2 NEW) ====================
+lazy val pekkoVersion = "1.0.3"
+libraryDependencies += "org.apache.pekko" %% "pekko-actor-typed" % pekkoVersion
+libraryDependencies += "org.apache.pekko" %% "pekko-stream" % pekkoVersion
+libraryDependencies += "org.apache.pekko" %% "pekko-slf4j" % pekkoVersion
+
 // JUnit 4
 libraryDependencies += "junit" % "junit" % "4.13.2" % Test
 
 // Add JUnit 4 runner
 libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.2" % Test
 
+// Pekko TestKit (D2 NEW)
+libraryDependencies += "org.apache.pekko" %% "pekko-testkit" % pekkoVersion % Test
+
 // Caffeine Cache for session and data caching
 libraryDependencies += "com.github.ben-manes.caffeine" % "caffeine" % "3.1.8"
-
 
 // Mockito for mocking dependencies
 libraryDependencies += "org.mockito" % "mockito-core" % "5.14.2" % Test
@@ -118,7 +126,7 @@ generateJavadoc := {
     "-d", outDir.getAbsolutePath,
     "-sourcepath", sourcePath.getAbsolutePath,
     "-classpath", cp,
-    "-subpackages", "models:controllers:services:modules",
+    "-subpackages", "models:controllers:services:modules:actors",
     "-Xdoclint:none"
   )
 
